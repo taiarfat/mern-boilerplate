@@ -4,7 +4,7 @@ import {
   Box, 
   Typography, 
 } from '@mui/material';
-
+import LineChart from '../components/LineChart';
 const HomePage: React.FC = () => {
 
 
@@ -14,6 +14,7 @@ const HomePage: React.FC = () => {
           <Typography component="h1" variant="h4" gutterBottom>
             Welcome to the Bac Hack
           </Typography>
+          <LineChart />
         </Box>
       </Container>
   );
