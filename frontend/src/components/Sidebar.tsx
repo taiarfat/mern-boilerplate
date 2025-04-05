@@ -14,10 +14,6 @@ import {
 import { Dashboard, People, MonetizationOn, Computer, AttachMoney } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 
-// Import icons - MUI doesn't export icons in the main package
-// If you don't have @mui/icons-material installed, you'll need to install it:
-// npm install @mui/icons-material
-
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
