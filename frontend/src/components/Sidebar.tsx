@@ -40,12 +40,18 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
       <List>
         {sidebarItems.map(item => (
           <ListItem key={item.text} disablePadding>
-            <ListItemButton
-              component={Link}
-              to={item.path}
-              onClick={isMobile ? onClose : undefined}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
+            <ListItemButton component={Link} to={item.path} onClick={isMobile ? onClose : undefined} sx={{
+              '&:hover': {
+                backgroundColor: '#f58220',
+                color: 'white',
+                '& .MuiSvgIcon-root': {
+                  color: 'white',
+                },
+              },
+            }}>
+              <ListItemIcon>
+                {item.icon}
+              </ListItemIcon>
               <ListItemText primary={item.text} />
             </ListItemButton>
           </ListItem>
