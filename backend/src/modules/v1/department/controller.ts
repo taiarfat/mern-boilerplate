@@ -27,7 +27,7 @@ const getAllDepartments = async (req: AuthRequest, res: Response, next: NextFunc
       httpStatusCodes.OK, 
       responseStatus.SUCCESS, 
       "Departments retrieved successfully", 
-      departments
+      {departments}
     );
   } catch (err) {
     console.error("Error in getAllDepartments:", err);

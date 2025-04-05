@@ -10,7 +10,7 @@ export const sendResponse = <T>(
   data: T = {} as T
 ): Response<ApiResponse<T>> => {
   // Merge data directly into the response instead of nesting it inside a data field
-  return res.status(statuscode).json({ status, statuscode, operation, ...data });
+  return res.status(statuscode).json(data);
 };
 
 export const errResponse = (
