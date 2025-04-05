@@ -3,6 +3,7 @@ export type RevenueExpensesRequest = {
   groupBy?: 'quarter' | 'month';
   period?: 'last-month' | 'last-quarter' | 'last-year';
   categoryId?: 'Software PVT' | 'System' | 'Product';
+  projectType?: 'fixed' | 'dedicated';
 };
 
 export type RevenueExpenses = {

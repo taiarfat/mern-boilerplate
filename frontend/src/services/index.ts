@@ -29,9 +29,10 @@ export const getExpenses = async ({
   groupBy,
   period,
   categoryId,
+  projectType,
 }: RevenueExpensesRequest): Promise<RevenueExpensesResponse> => {
   const response = await api.get('/dashboard/charts/expenses', {
-    params: { department, groupBy, period, categoryId },
+    params: { department, groupBy, period, categoryId, projectType },
   });
   return response.data;
 };
@@ -41,9 +42,10 @@ export const getRevenue = async ({
   groupBy,
   period,
   categoryId,
+  projectType,
 }: RevenueExpensesRequest): Promise<RevenueExpensesResponse> => {
   const response = await api.get('/dashboard/charts/revenue', {
-    params: { department, groupBy, period, categoryId },
+    params: { department, groupBy, period, categoryId, projectType },
   });
   return response.data;
 };

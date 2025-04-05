@@ -28,10 +28,11 @@ export const useGetExpenses = ({
   groupBy,
   period,
   categoryId,
+  projectType,
 }: RevenueExpensesRequest) => {
   return useQuery({
-    queryKey: ['expenses', { department, groupBy, period, categoryId }],
-    queryFn: () => getExpenses({ department, groupBy, period, categoryId }),
+    queryKey: ['expenses', { department, groupBy, period, categoryId, projectType }],
+    queryFn: () => getExpenses({ department, groupBy, period, categoryId, projectType }),
   });
 };
 
@@ -40,9 +41,10 @@ export const useGetRevenue = ({
   groupBy,
   period,
   categoryId,
+  projectType,
 }: RevenueExpensesRequest) => {
   return useQuery({
-    queryKey: ['revenue', { department, groupBy, period, categoryId }],
-    queryFn: () => getRevenue({ department, groupBy, period, categoryId }),
+    queryKey: ['revenue', { department, groupBy, period, categoryId, projectType }],
+    queryFn: () => getRevenue({ department, groupBy, period, categoryId, projectType }),
   });
 };

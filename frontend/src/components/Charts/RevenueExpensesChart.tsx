@@ -34,15 +34,20 @@ type RevenueExpensesChartProps = {
 const CHART_ID = 'revenue-expenses-chart';
 const DEFAULT_DEPARTMENT = 'all';
 const DEFAULT_CATEGORY = 'all';
+const DEFAULT_PROJECT_TYPE = 'all';
 
 const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments, categories }) => {
   const theme = useTheme();
   const [timeView, setTimeView] = useState<TimeView>('quarterly');
   const [department, setDepartment] = useState<string>(DEFAULT_DEPARTMENT);
   const [category, setCategory] = useState<string>(DEFAULT_CATEGORY);
+  const [projectType, setProjectType] = useState<string>(DEFAULT_PROJECT_TYPE);
 
   const departmentParam = department === DEFAULT_DEPARTMENT ? undefined : department;
-  const categoryParam = category === DEFAULT_CATEGORY ? undefined : category as 'Software PVT' | 'System' | 'Product';
+  const categoryParam =
+    category === DEFAULT_CATEGORY ? undefined : (category as 'Software PVT' | 'System' | 'Product');
+  const projectTypeParam =
+    projectType === DEFAULT_PROJECT_TYPE ? undefined : (projectType as 'fixed' | 'dedicated');
 
   const {
     data: revenueByQuarter,
@@ -53,6 +58,7 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
     department: departmentParam,
     groupBy: 'quarter',
     period: 'last-year',
+    projectType: projectTypeParam,
   });
 
   const {
@@ -64,6 +70,7 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
     department: departmentParam,
     groupBy: 'month',
     period: 'last-year',
+    projectType: projectTypeParam,
   });
 
   const {
@@ -75,6 +82,7 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
     department: departmentParam,
     groupBy: 'quarter',
     period: 'last-year',
+    projectType: projectTypeParam,
   });
 
   const {
@@ -86,6 +94,7 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
     department: departmentParam,
     groupBy: 'month',
     period: 'last-year',
+    projectType: projectTypeParam,
   });
 
   // Clean up chart instance on component unmount
@@ -102,8 +111,7 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
     isExpensesByQuarterLoading ||
     isExpensesByMonthLoading;
 
-  const hasError =
-    revenueQuarterError || revenueMonthError || expensesQuarterError || expensesMonthError;
+  const hasError = revenueQuarterError || revenueMonthError || expensesQuarterError || expensesMonthError;
 
   const createChartData = useMemo(
     () => (labels: string[], revenueData: number[], expensesData: number[]) => ({
@@ -205,8 +213,6 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
     );
   }
 
-  console.log(category);
-
   return (
     <Card>
       <CardContent>
@@ -232,21 +238,34 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
               </Select>
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 150, mr: 2 }}>
-            <InputLabel id="revenue-department-label">Department</InputLabel>
-            <Select
-              labelId="revenue-department-label"
-              value={department}
-              label="Department"
-              onChange={(e) => setDepartment(e.target.value as string)}
-            >
-              <MenuItem value={DEFAULT_DEPARTMENT}>All Departments</MenuItem>
-              {departments.map(dept => (
-                <MenuItem key={dept._id} value={dept._id}>
-                  {dept.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+              <InputLabel id="revenue-department-label">Department</InputLabel>
+              <Select
+                labelId="revenue-department-label"
+                value={department}
+                label="Department"
+                onChange={e => setDepartment(e.target.value as string)}
+              >
+                <MenuItem value={DEFAULT_DEPARTMENT}>All Departments</MenuItem>
+                {departments.map(dept => (
+                  <MenuItem key={dept._id} value={dept._id}>
+                    {dept.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 150, mr: 2 }}>
+              <InputLabel id="revenue-project-type-label">Project Type</InputLabel>
+              <Select
+                labelId="revenue-project-type-label"
+                value={projectType}
+                label="Project Type"
+                onChange={e => setProjectType(e.target.value as string)}
+              >
+                <MenuItem value={DEFAULT_PROJECT_TYPE}>All Project Types</MenuItem>
+                <MenuItem value="fixed">Fixed</MenuItem>
+                <MenuItem value="dedicated">Dedicated</MenuItem>
+              </Select>
+            </FormControl>
           </Box>
           <Tabs value={timeView} onChange={handleTimeViewChange} aria-label="time period tabs">
             <Tab label="Quarterly" value="quarterly" />
