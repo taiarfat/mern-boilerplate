@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { 
-  AppBar, 
-  Box, 
-  Toolbar, 
-  Typography, 
-  IconButton, 
+import {
+  AppBar,
+  Box,
+  Toolbar,
+  Typography,
+  IconButton,
   useMediaQuery,
-  useTheme
+  useTheme,
 } from '@mui/material';
 import { Menu } from '@mui/icons-material';
 import Sidebar from './Sidebar';
@@ -34,20 +34,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <AppBar 
-        position="fixed" 
-        sx={{ 
-          zIndex: (theme) => theme.zIndex.drawer + 1,
+      <AppBar
+        position="fixed"
+        sx={{
+          zIndex: theme => theme.zIndex.drawer + 1,
           width: '100%',
         }}
       >
         <Toolbar>
-          <IconButton
-            color="inherit"
-            edge="start"
-            onClick={handleToggleSidebar}
-            sx={{ mr: 2 }}
-          >
+          <IconButton color="inherit" edge="start" onClick={handleToggleSidebar} sx={{ mr: 2 }}>
             <Menu />
           </IconButton>
           <Typography variant="h6" noWrap component="div">
@@ -64,13 +59,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           flexGrow: 1,
           p: 3,
           mt: '64px',
-          ml: { 
+          ml: {
             xs: 0,
-            md: sidebarOpen ? '250px' : 0 
+            md: sidebarOpen ? '250px' : 0,
           },
-          width: { 
+          width: {
             xs: '100%',
-            md: sidebarOpen ? 'calc(100% - 250px)' : '100%' 
+            md: sidebarOpen ? 'calc(100% - 250px)' : '100%',
           },
           transition: theme.transitions.create(['margin', 'width'], {
             easing: theme.transitions.easing.easeOut,
@@ -84,4 +79,4 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   );
 };
 
-export default Layout; 
+export default Layout;

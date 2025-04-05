@@ -2,16 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { 
-  Container, 
-  Box, 
-  Typography, 
-  TextField, 
-  Button, 
-  Grid, 
-  Link, 
-  Alert 
-} from '@mui/material';
+import { Container, Box, Typography, TextField, Button, Grid, Link, Alert } from '@mui/material';
 import { signupSchema, type SignupFormData } from '../utils/validation';
 import { signup } from '../services/auth';
 
@@ -20,12 +11,12 @@ const SignupPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  const { 
-    register, 
-    handleSubmit, 
-    formState: { errors } 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
   } = useForm<SignupFormData>({
-    resolver: zodResolver(signupSchema)
+    resolver: zodResolver(signupSchema),
   });
 
   const onSubmit = async (data: SignupFormData) => {
@@ -35,7 +26,7 @@ const SignupPage: React.FC = () => {
       await signup({
         name: data.name,
         email: data.email,
-        password: data.password
+        password: data.password,
       });
       navigate('/');
     } catch (err) {
@@ -59,13 +50,13 @@ const SignupPage: React.FC = () => {
         <Typography component="h1" variant="h5">
           Sign Up
         </Typography>
-        
+
         {error && (
           <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
             {error}
           </Alert>
         )}
-        
+
         <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 1 }}>
           <TextField
             margin="normal"
@@ -79,7 +70,7 @@ const SignupPage: React.FC = () => {
             error={!!errors.name}
             helperText={errors.name?.message}
           />
-          
+
           <TextField
             margin="normal"
             required
@@ -91,7 +82,7 @@ const SignupPage: React.FC = () => {
             error={!!errors.email}
             helperText={errors.email?.message}
           />
-          
+
           <TextField
             margin="normal"
             required
@@ -104,7 +95,7 @@ const SignupPage: React.FC = () => {
             error={!!errors.password}
             helperText={errors.password?.message}
           />
-          
+
           <TextField
             margin="normal"
             required
@@ -117,7 +108,7 @@ const SignupPage: React.FC = () => {
             error={!!errors.confirmPassword}
             helperText={errors.confirmPassword?.message}
           />
-          
+
           <Button
             type="submit"
             fullWidth
@@ -127,7 +118,7 @@ const SignupPage: React.FC = () => {
           >
             {loading ? 'Signing Up...' : 'Sign Up'}
           </Button>
-          
+
           <Grid container justifyContent="flex-end">
             <Grid item>
               <Link component={RouterLink} to="/login" variant="body2">
@@ -141,4 +132,4 @@ const SignupPage: React.FC = () => {
   );
 };
 
-export default SignupPage; 
+export default SignupPage;

@@ -2,16 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { 
-  Container, 
-  Box, 
-  Typography, 
-  TextField, 
-  Button, 
-  Grid, 
-  Link, 
-  Alert 
-} from '@mui/material';
+import { Container, Box, Typography, TextField, Button, Grid, Link, Alert } from '@mui/material';
 import { loginSchema, type LoginFormData } from '../utils/validation';
 import { login } from '../services/auth';
 
@@ -20,12 +11,12 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  const { 
-    register, 
-    handleSubmit, 
-    formState: { errors } 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
   } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema)
+    resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = async (data: LoginFormData) => {
@@ -55,13 +46,13 @@ const LoginPage: React.FC = () => {
         <Typography component="h1" variant="h5">
           Sign In
         </Typography>
-        
+
         {error && (
           <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
             {error}
           </Alert>
         )}
-        
+
         <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 1 }}>
           <TextField
             margin="normal"
@@ -75,7 +66,7 @@ const LoginPage: React.FC = () => {
             error={!!errors.email}
             helperText={errors.email?.message}
           />
-          
+
           <TextField
             margin="normal"
             required
@@ -88,7 +79,7 @@ const LoginPage: React.FC = () => {
             error={!!errors.password}
             helperText={errors.password?.message}
           />
-          
+
           <Button
             type="submit"
             fullWidth
@@ -98,7 +89,7 @@ const LoginPage: React.FC = () => {
           >
             {loading ? 'Signing In...' : 'Sign In'}
           </Button>
-          
+
           <Grid container justifyContent="flex-end">
             <Grid item>
               <Link component={RouterLink} to="/signup" variant="body2">
@@ -112,4 +103,4 @@ const LoginPage: React.FC = () => {
   );
 };
 
-export default LoginPage; 
+export default LoginPage;

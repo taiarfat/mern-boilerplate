@@ -1,15 +1,15 @@
 import React from 'react';
-import { 
-  Box, 
-  Drawer, 
-  List, 
-  ListItem, 
-  ListItemButton, 
-  ListItemIcon, 
-  ListItemText, 
-  Divider, 
+import {
+  Box,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Divider,
   useMediaQuery,
-  useTheme
+  useTheme,
 } from '@mui/material';
 import { Dashboard, People, MonetizationOn, Computer, AttachMoney } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
@@ -26,7 +26,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   const sidebarItems = [
     { text: 'Dashboard', path: '/', icon: <Dashboard /> },
     { text: 'HR', path: '/hr', icon: <People /> },
@@ -34,16 +34,18 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
     { text: 'Finance', path: '/finance', icon: <AttachMoney /> },
     { text: 'IT', path: '/it', icon: <Computer /> },
   ];
-  
+
   const sidebarContent = (
     <Box sx={{ width: 250 }} role="presentation">
       <List>
-        {sidebarItems.map((item) => (
+        {sidebarItems.map(item => (
           <ListItem key={item.text} disablePadding>
-            <ListItemButton component={Link} to={item.path} onClick={isMobile ? onClose : undefined}>
-              <ListItemIcon>
-                {item.icon}
-              </ListItemIcon>
+            <ListItemButton
+              component={Link}
+              to={item.path}
+              onClick={isMobile ? onClose : undefined}
+            >
+              <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.text} />
             </ListItemButton>
           </ListItem>
@@ -58,7 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
       anchor="left"
       open={open}
       onClose={onClose}
-      variant={isMobile ? "temporary" : "persistent"}
+      variant={isMobile ? 'temporary' : 'persistent'}
       sx={{
         width: 250,
         flexShrink: 0,
@@ -75,4 +77,4 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
   );
 };
 
-export default Sidebar; 
+export default Sidebar;
