@@ -63,9 +63,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
         width: 250,
         flexShrink: 0,
         '& .MuiDrawer-paper': {
-          width: 250,
+          width: 251,
           boxSizing: 'border-box',
-          top: '64px', // Adjust based on your AppBar height
+          top: '64px',
           height: 'calc(100% - 64px)',
         },
       }}
