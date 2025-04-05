@@ -17,6 +17,6 @@ export * from './requests/UserRequests';
 export * from './responses/ApiResponse';
 
 // Common types
-export * from './common/Config';
+// export * from './common/Config';
 export * from './common/Error';
 export * from './common/Token';

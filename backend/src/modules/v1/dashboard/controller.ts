@@ -16,9 +16,10 @@ import Project from "../../../models/Project";
 import Department from "../../../models/Department";
 import AIService from "../../../services/aiService";
 import { InsightType } from "../../../models/AIInsight";
+import config from "../../../constants/config";
 
 // Initialize AI service with API key from environment variables
-const aiService = new AIService(process.env.OPENAI_API_KEY || "");
+const aiService = new AIService(config.AI_ENDPOINT);
 
 /**
  * Get date range based on period
@@ -30,18 +31,18 @@ const getDateRangeForPeriod = (period?: string): { start: Date; end: Date } => {
   let start = new Date();
 
   switch (period) {
-    case 'last_year':
+    case "last_year":
       start.setFullYear(end.getFullYear() - 1);
       start.setMonth(0, 1);
       break;
-    case 'last_2_years':
+    case "last_2_years":
       start.setFullYear(end.getFullYear() - 2);
       start.setMonth(0, 1);
       break;
-    case 'half_year':
+    case "half_year":
       start.setMonth(end.getMonth() - 6);
       break;
-    case 'quarter':
+    case "quarter":
       start.setMonth(end.getMonth() - 3);
       break;
     default:
@@ -159,31 +160,29 @@ const getDashboardSummary = async (
     let insights = [];
     let recommendations = [];
 
-    if (process.env.OPENAI_API_KEY) {
-      try {
-        // Get trend analysis
-        const trendInsight = await aiService.getInsight({
-          insightType: InsightType.TREND,
-          department: department ? (department as any) : undefined,
-          startDate: start,
-          endDate: end,
-        });
+    try {
+      // Get trend analysis
+      const trendInsight = await aiService.getInsight({
+        insightType: InsightType.TREND,
+        department: department ? (department as any) : undefined,
+        startDate: start,
+        endDate: end,
+      });
 
-        // Get recommendations
-        const recommendationInsight = await aiService.getInsight({
-          insightType: InsightType.RECOMMENDATION,
-          department: department ? (department as any) : undefined,
-          startDate: start,
-          endDate: end,
-        });
+      // Get recommendations
+      const recommendationInsight = await aiService.getInsight({
+        insightType: InsightType.RECOMMENDATION,
+        department: department ? (department as any) : undefined,
+        startDate: start,
+        endDate: end,
+      });
 
-        // Format insights
-        insights = trendInsight.insights || [];
-        recommendations = recommendationInsight.recommendations || [];
-      } catch (error) {
-        console.error("Error fetching AI insights:", error);
-        // Continue without insights if there's an error
-      }
+      // Format insights
+      insights = trendInsight.insights || [];
+      recommendations = recommendationInsight.recommendations || [];
+    } catch (error) {
+      console.error("Error fetching AI insights:", error);
+      // Continue without insights if there's an error
     }
 
     // Prepare response data
@@ -430,16 +429,6 @@ const getAIInsights = async (
   next: NextFunction
 ): Promise<Response | void> => {
   try {
-    // Check if OpenAI API key is available
-    if (!process.env.OPENAI_API_KEY) {
-      return sendResponse(
-        res,
-        httpStatusCodes["Bad Request"],
-        responseStatus.ERROR,
-        "OpenAI API key not configured"
-      );
-    }
-
     // Extract query parameters
     const {
       startDate,
@@ -541,7 +530,7 @@ const getHeadcountMetrics = async (
   try {
     const { period, department } = req.query;
     const dateRange = getDateRangeForPeriod(period as string);
-    
+
     // Build base query
     const query: any = {};
     if (department) {
@@ -556,19 +545,19 @@ const getHeadcountMetrics = async (
           _id: "$department",
           count: { $sum: 1 },
           totalSalary: { $sum: "$salary" },
-          positions: { $addToSet: "$position" }
-        }
+          positions: { $addToSet: "$position" },
+        },
       },
       {
         $lookup: {
           from: "departments",
           localField: "_id",
           foreignField: "_id",
-          as: "departmentInfo"
-        }
+          as: "departmentInfo",
+        },
       },
       {
-        $unwind: "$departmentInfo"
+        $unwind: "$departmentInfo",
       },
       {
         $project: {
@@ -576,9 +565,9 @@ const getHeadcountMetrics = async (
           headcount: "$count",
           averageSalary: { $divide: ["$totalSalary", "$count"] },
           positions: 1,
-          _id: 0
-        }
-      }
+          _id: 0,
+        },
+      },
     ]);
 
     return sendResponse(
@@ -588,7 +577,10 @@ const getHeadcountMetrics = async (
       "Headcount metrics retrieved successfully",
       {
         departments: currentHeadcount,
-        totalHeadcount: currentHeadcount.reduce((sum, dept) => sum + dept.headcount, 0)
+        totalHeadcount: currentHeadcount.reduce(
+          (sum, dept) => sum + dept.headcount,
+          0
+        ),
       }
     );
   } catch (err) {
