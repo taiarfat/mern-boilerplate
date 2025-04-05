@@ -162,20 +162,24 @@ const getDashboardSummary = async (
 
     try {
       // Get trend analysis
-      const trendInsight = await aiService.getInsight({
-        insightType: InsightType.TREND,
-        department: department ? (department as any) : undefined,
-        startDate: start,
-        endDate: end,
-      });
+      const trendInsight = await aiService.getInsight(
+        {
+          type: InsightType.TREND,
+          topic: "revenue",
+          data: {},
+        },
+        req.baseUrl + req.url
+      );
 
       // Get recommendations
-      const recommendationInsight = await aiService.getInsight({
-        insightType: InsightType.RECOMMENDATION,
-        department: department ? (department as any) : undefined,
-        startDate: start,
-        endDate: end,
-      });
+      const recommendationInsight = await aiService.getInsight(
+        {
+          type: InsightType.RECOMMENDATION,
+          topic: "revenue",
+          data: {},
+        },
+        req.baseUrl + req.url
+      );
 
       // Format insights
       insights = trendInsight.insights || [];
@@ -464,13 +468,14 @@ const getAIInsights = async (
     }
 
     // Get AI insight
-    const insight = await aiService.getInsight({
-      insightType: insightType as InsightType,
-      department: department ? (department as any) : undefined,
-      category: category ? (category as any) : undefined,
-      startDate: start,
-      endDate: end,
-    });
+    const insight = await aiService.getInsight(
+      {
+        type: insightType as InsightType,
+        topic: "revenue",
+        data: {},
+      },
+      req.baseUrl + req.url
+    );
 
     return sendResponse(
       res,
