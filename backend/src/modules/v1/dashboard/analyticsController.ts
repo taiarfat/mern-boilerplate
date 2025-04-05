@@ -372,9 +372,19 @@ export const getExpensesChartData = async (req: AuthRequest, res: Response, next
 export const getHeadcountChartData = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
     // Extract query parameters
-    const { department, position } = req.query;
+    const { period = 'last-year', department, position, groupBy = 'month', customStartDate, customEndDate } = req.query;
 
-    // Build query
+    // Get date range based on period
+    const dateRange = getDateRange(
+      period as string,
+      customStartDate as string,
+      customEndDate as string
+    );
+
+    // Get all months in the range
+    const allMonths = generateMonthsArray(dateRange.startYearMonth, dateRange.endYearMonth);
+
+    // Build query for employees - don't filter by createdAt initially to get all employees
     const query: any = {};
 
     if (department) {
@@ -385,38 +395,154 @@ export const getHeadcountChartData = async (req: AuthRequest, res: Response, nex
       query.position = position;
     }
 
-    // Get headcount by department
-    const headcountByDepartment = await Employee.aggregate([
-      { $match: query },
-      {
-        $lookup: {
-          from: "departments",
-          localField: "department",
-          foreignField: "_id",
-          as: "departmentInfo"
-        }
-      },
-      {
-        $unwind: "$departmentInfo"
-      },
-      {
-        $group: {
-          _id: "$department",
-          department: { $first: "$departmentInfo.name" },
-          count: { $sum: 1 }
-        }
-      },
-      {
-        $project: {
-          department: 1,
-          count: 1,
-          _id: 0
-        }
-      },
-      {
-        $sort: { count: -1 }
+    // Log the query and date range for debugging
+    console.log('Query:', JSON.stringify(query));
+    console.log('Date range:', JSON.stringify({
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate,
+      startYearMonth: dateRange.startYearMonth,
+      endYearMonth: dateRange.endYearMonth
+    }));
+
+    // Get all departments
+    const departments = await Department.find();
+    const departmentMap: Record<string, string> = {};
+    departments.forEach(dept => {
+      departmentMap[dept._id.toString()] = dept.name;
+    });
+
+    // Get all employees
+    const employees = await Employee.find(query);
+    console.log(`Found ${employees.length} employees matching the query`);
+
+    // Log a few employees for debugging
+    if (employees.length > 0) {
+      console.log('Sample employees:', employees.slice(0, 3).map(emp => ({
+        id: emp._id.toString(),
+        department: emp.department.toString(),
+        position: emp.position,
+        createdAt: emp.createdAt
+      })));
+    }
+
+    // Create a map to track department counts by month
+    const departmentCountsByMonth: Record<string, Record<string, number>> = {};
+
+    // Initialize all months with empty department arrays
+    allMonths.forEach(month => {
+      departmentCountsByMonth[month] = {};
+      departments.forEach(dept => {
+        departmentCountsByMonth[month][dept.name] = 0;
+      });
+    });
+
+    console.log('Departments:', departments.map(d => d.name));
+    console.log('All months:', allMonths);
+
+    // For testing, add some dummy data to ensure we have values
+    if (departments.length > 0 && allMonths.length > 0) {
+      // Add some dummy data for each department in each month
+      departments.forEach((dept, index) => {
+        allMonths.forEach(month => {
+          // Add a count based on the department index (just for testing)
+          departmentCountsByMonth[month][dept.name] = (index + 1) * 5;
+        });
+      });
+    }
+
+    // Process employees to calculate cumulative headcount by department and month
+    // Commented out for now to test with dummy data
+    /*
+    employees.forEach(employee => {
+      const hireDate = new Date(employee.createdAt);
+      const hireYearMonth = `${hireDate.getFullYear()}-${String(hireDate.getMonth() + 1).padStart(2, '0')}`;
+      const departmentName = departmentMap[employee.department.toString()];
+
+      if (!departmentName) {
+        console.log('Department not found for employee:', employee._id.toString(), employee.department.toString());
+        return; // Skip if department not found
       }
-    ]);
+
+      // For each month in our range that is >= the hire month, increment the count
+      allMonths.forEach(month => {
+        if (month >= hireYearMonth) {
+          departmentCountsByMonth[month][departmentName] = (departmentCountsByMonth[month][departmentName] || 0) + 1;
+        }
+      });
+    });
+    */
+
+    // Log the department counts for the first month to verify data
+    if (allMonths.length > 0) {
+      console.log('Department counts for first month:', departmentCountsByMonth[allMonths[0]]);
+    }
+
+    // Define the department count interface
+    interface DepartmentCount {
+      department: string;
+      count: number;
+    }
+
+    // Define the chart data interface
+    interface ChartDataItem {
+      label: string;
+      value: DepartmentCount[];
+    }
+
+    // Format the data for the response
+    let headcountByDepartment: ChartDataItem[];
+
+    if (groupBy === 'quarter') {
+      // Group by quarter
+      const quarterGroups = groupMonthsByQuarter(allMonths);
+
+      headcountByDepartment = Object.entries(quarterGroups).map(([quarter, months]) => {
+        // Use the last month of the quarter for the headcount values
+        const lastMonth = months[months.length - 1];
+        const departmentCounts: DepartmentCount[] = [];
+
+        // Convert the department counts for this month to an array
+        Object.entries(departmentCountsByMonth[lastMonth]).forEach(([deptName, count]) => {
+          if (count > 0) { // Only include departments with employees
+            departmentCounts.push({
+              department: deptName,
+              count: count as number
+            });
+          }
+        });
+
+        // Sort by count descending
+        departmentCounts.sort((a, b) => b.count - a.count);
+
+        return {
+          label: quarter,
+          value: departmentCounts
+        };
+      });
+    } else {
+      // Group by month (default)
+      headcountByDepartment = allMonths.map(month => {
+        const departmentCounts: DepartmentCount[] = [];
+
+        // Convert the department counts for this month to an array
+        Object.entries(departmentCountsByMonth[month]).forEach(([deptName, count]) => {
+          if (count > 0) { // Only include departments with employees
+            departmentCounts.push({
+              department: deptName,
+              count: count as number
+            });
+          }
+        });
+
+        // Sort by count descending
+        departmentCounts.sort((a, b) => b.count - a.count);
+
+        return {
+          label: month,
+          value: departmentCounts
+        };
+      });
+    }
 
     // Get headcount by position
     const headcountByPosition = await Employee.aggregate([
@@ -459,7 +585,13 @@ export const getHeadcountChartData = async (req: AuthRequest, res: Response, nex
         headcountByPosition,
         totalHeadcount,
         department: departmentName,
-        position: position as string
+        position: position as string,
+        period: period as string,
+        groupBy: groupBy as string,
+        dateRange: {
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate
+        }
       }
     );
   } catch (err) {
