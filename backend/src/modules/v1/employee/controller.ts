@@ -10,10 +10,9 @@ import { httpStatusCodes, responseStatus } from "../../../constants/constants";
 import { sendResponse } from "../../../helpers/response";
 import Employee from "../../../models/Employee";
 import Department from "../../../models/Department";
-import {
-  encryptPassword,
-  comparePassword,
-} from "../../../helpers/encryptPassword";
+import Project from "../../../models/Project";
+import Income from "../../../models/Income";
+import { encryptPassword } from "../../../helpers/encryptPassword";
 
 /**
  * Get all employees
@@ -29,7 +28,7 @@ const getAllEmployees = async (
   next: NextFunction
 ): Promise<Response | void> => {
   try {
-    const { department, position } = req.query;
+    const { department, position, projectType } = req.query;
 
     // Build query
     const query: any = {};
@@ -40,6 +39,53 @@ const getAllEmployees = async (
 
     if (position) {
       query.position = position;
+    }
+
+    // Handle category and projectType filters
+    if (projectType) {
+      // We need to find projects that match the criteria
+      const projectQuery: any = {};
+
+      projectQuery.type = projectType;
+
+      // If we have projectType filter or both filters
+      if (Object.keys(projectQuery).length > 0) {
+        const projects = await Project.find(projectQuery);
+
+        if (projects.length === 0) {
+          // No projects match the criteria, return empty result
+          return sendResponse(
+            res,
+            httpStatusCodes.OK,
+            responseStatus.SUCCESS,
+            "Employees retrieved successfully",
+            []
+          );
+        }
+
+        // Get all employee IDs from these projects
+        const employeeIds = new Set();
+
+        projects.forEach((project) => {
+          project.team.forEach((empId) => {
+            employeeIds.add(empId.toString());
+          });
+        });
+
+        // Add employee filter to query
+        if (employeeIds.size > 0) {
+          query._id = { $in: Array.from(employeeIds) };
+        } else {
+          // No employees found in these projects
+          return sendResponse(
+            res,
+            httpStatusCodes.OK,
+            responseStatus.SUCCESS,
+            "Employees retrieved successfully",
+            []
+          );
+        }
+      }
     }
 
     const employees = await Employee.find(query)
@@ -426,7 +472,7 @@ const deleteEmployee = async (
  * @returns Response with employee summary by department
  */
 const getEmployeeSummaryByDepartment = async (
-  req: AuthRequest,
+  _req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<Response | void> => {
@@ -487,7 +533,7 @@ const getEmployeeSummaryByDepartment = async (
  * @returns Response with employee summary by position
  */
 const getEmployeeSummaryByPosition = async (
-  req: AuthRequest,
+  _req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<Response | void> => {
