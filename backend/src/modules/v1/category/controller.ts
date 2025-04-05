@@ -27,7 +27,7 @@ const getAllCategories = async (req: AuthRequest, res: Response, next: NextFunct
       httpStatusCodes.OK, 
       responseStatus.SUCCESS, 
       "Categories retrieved successfully", 
-      categories
+      {categories}
     );
   } catch (err) {
     console.error("Error in getAllCategories:", err);
@@ -63,7 +63,7 @@ const getCategoryById = async (req: AuthRequest, res: Response, next: NextFuncti
       httpStatusCodes.OK, 
       responseStatus.SUCCESS, 
       "Category retrieved successfully", 
-      category
+      {category}
     );
   } catch (err) {
     console.error("Error in getCategoryById:", err);

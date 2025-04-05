@@ -14,6 +14,7 @@ import Expense from "../../../models/Expense";
 import Employee from "../../../models/Employee";
 import Project from "../../../models/Project";
 import Department from "../../../models/Department";
+import Category from "../../../models/Category";
 import { getDateRange, generateMonthsArray, groupMonthsByQuarter } from "../../../utils/dateRangeHelper";
 import mongoose from "mongoose";
 
@@ -28,7 +29,7 @@ import mongoose from "mongoose";
 export const getRevenueChartData = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
     // Extract query parameters
-    const { period = 'last-year', department, projectType, groupBy = 'month', customStartDate, customEndDate } = req.query;
+    const { period = 'last-year', department, projectType, groupBy = 'month', customStartDate, customEndDate, categoryId } = req.query;
 
     // Get date range based on period
     const dateRange = getDateRange(
@@ -42,6 +43,12 @@ export const getRevenueChartData = async (req: AuthRequest, res: Response, next:
       yearMonth: { $gte: dateRange.startYearMonth, $lte: dateRange.endYearMonth }
     };
 
+    // Add category filter if provided
+    if (categoryId) {
+      incomeQuery.category = new mongoose.Types.ObjectId(categoryId as string);
+    }
+
+    
     // Get all months in the range
     const allMonths = generateMonthsArray(dateRange.startYearMonth, dateRange.endYearMonth);
 
@@ -236,6 +243,13 @@ export const getRevenueChartData = async (req: AuthRequest, res: Response, next:
       departmentName = departmentDoc?.name;
     }
 
+    // Get category name if category is specified
+    let categoryName = null;
+    if (categoryId) {
+      const categoryDoc = await Category.findById(categoryId);
+      categoryName = categoryDoc?.name;
+    }
+
     return sendResponse(
       res,
       httpStatusCodes.OK,
@@ -247,6 +261,7 @@ export const getRevenueChartData = async (req: AuthRequest, res: Response, next:
         period: period as string,
         groupBy: groupBy as string,
         department: departmentName,
+        category: categoryName,
         projectType: projectType as string || null,
         dateRange: {
           startDate: dateRange.startDate,
@@ -271,7 +286,7 @@ export const getRevenueChartData = async (req: AuthRequest, res: Response, next:
 export const getExpensesChartData = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
     // Extract query parameters
-    const { period = 'last-year', department, groupBy = 'month', expenseType, customStartDate, customEndDate } = req.query;
+    const { period = 'last-year', department, groupBy = 'month', expenseType, customStartDate, customEndDate, categoryId } = req.query;
 
     // Get date range based on period
     const dateRange = getDateRange(
@@ -291,6 +306,11 @@ export const getExpensesChartData = async (req: AuthRequest, res: Response, next
 
     if (expenseType) {
       query.type = expenseType;
+    }
+
+    // Add category filter if provided
+    if (categoryId) {
+      query.category = new mongoose.Types.ObjectId(categoryId as string);
     }
 
     // Get all months in the range
@@ -349,7 +369,8 @@ export const getExpensesChartData = async (req: AuthRequest, res: Response, next
         {
           $match: {
             yearMonth: { $gte: dateRange.startYearMonth, $lte: dateRange.endYearMonth },
-            ...(department ? { department: new mongoose.Types.ObjectId(department as string) } : {})
+            ...(department ? { department: new mongoose.Types.ObjectId(department as string) } : {}),
+            ...(categoryId ? { category: new mongoose.Types.ObjectId(categoryId as string) } : {})
           }
         },
         {
@@ -378,6 +399,13 @@ export const getExpensesChartData = async (req: AuthRequest, res: Response, next
       departmentName = departmentDoc?.name;
     }
 
+    // Get category name if category is specified
+    let categoryName = null;
+    if (categoryId) {
+      const categoryDoc = await Category.findById(categoryId);
+      categoryName = categoryDoc?.name;
+    }
+
     return sendResponse(
       res,
       httpStatusCodes.OK,
@@ -390,6 +418,7 @@ export const getExpensesChartData = async (req: AuthRequest, res: Response, next
         period: period as string,
         groupBy: groupBy as string,
         department: departmentName,
+        category: categoryName,
         expenseType: expenseType as string,
         dateRange: {
           startDate: dateRange.startDate,
