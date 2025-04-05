@@ -17,7 +17,7 @@ const route = express.Router();
  *
  * @query {string} [department] - Filter by department ID
  * @query {string} [position] - Filter by position
- * @query {string} [category] - Filter by category ID (returns employees working on projects with income in this category)
+ * @query {string} [category] - Filter by employee's assigned category, projects with income in this category
  * @query {string} [projectType] - Filter by project type (returns employees working on projects of this type)
  */
 route.get("/", authMiddleware as any, controller.getAllEmployees as any);

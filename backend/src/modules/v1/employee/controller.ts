@@ -28,7 +28,7 @@ const getAllEmployees = async (
   next: NextFunction
 ): Promise<Response | void> => {
   try {
-    const { department, position, projectType } = req.query;
+    const { department, position, category, projectType } = req.query;
 
     // Build query
     const query: any = {};
@@ -39,6 +39,11 @@ const getAllEmployees = async (
 
     if (position) {
       query.position = position;
+    }
+
+    // Direct category filter (employee's assigned category)
+    if (category) {
+      query.category = category;
     }
 
     // Handle category and projectType filters
@@ -91,6 +96,7 @@ const getAllEmployees = async (
     const employees = await Employee.find(query)
       .select("-employeePassword")
       .populate("department", "name")
+      .populate("category", "name")
       .sort({ employeeName: 1 });
 
     return sendResponse(
@@ -124,7 +130,8 @@ const getEmployeeById = async (
 
     const employee = await Employee.findById(id)
       .select("-employeePassword")
-      .populate("department", "name");
+      .populate("department", "name")
+      .populate("category", "name");
 
     if (!employee) {
       return sendResponse(
@@ -170,6 +177,7 @@ const createEmployee = async (
       employeeDob,
       employeeRole,
       department,
+      category,
       position,
       salary,
     } = req.body;
@@ -196,6 +204,21 @@ const createEmployee = async (
         responseStatus.ERROR,
         "Invalid department"
       );
+    }
+
+    // Validate category if provided
+    if (category) {
+      const Category = require("../../../models/Category").default;
+      const categoryExists = await Category.findById(category);
+
+      if (!categoryExists) {
+        return sendResponse(
+          res,
+          httpStatusCodes["Bad Request"],
+          responseStatus.ERROR,
+          "Invalid category"
+        );
+      }
     }
 
     // Validate position
@@ -242,6 +265,7 @@ const createEmployee = async (
       employeeDob: new Date(employeeDob),
       employeeRole,
       department,
+      category, // Include category field (can be undefined)
       position,
       salary,
     });
@@ -251,8 +275,11 @@ const createEmployee = async (
     // @ts-ignore
     delete employeeResponse.employeePassword;
 
-    // Populate department for response
-    await employee.populate("department", "name");
+    // Populate department and category for response
+    await employee.populate([
+      { path: "department", select: "name" },
+      { path: "category", select: "name" },
+    ]);
 
     return sendResponse(
       res,
@@ -290,6 +317,7 @@ const updateEmployee = async (
       employeeDob,
       employeeRole,
       department,
+      category,
       position,
       salary,
     } = req.body;
@@ -330,6 +358,21 @@ const updateEmployee = async (
           httpStatusCodes["Bad Request"],
           responseStatus.ERROR,
           "Invalid department"
+        );
+      }
+    }
+
+    // Validate category if provided
+    if (category) {
+      const Category = require("../../../models/Category").default;
+      const categoryExists = await Category.findById(category);
+
+      if (!categoryExists) {
+        return sendResponse(
+          res,
+          httpStatusCodes["Bad Request"],
+          responseStatus.ERROR,
+          "Invalid category"
         );
       }
     }
@@ -382,6 +425,7 @@ const updateEmployee = async (
     if (employeeDob) employee.employeeDob = new Date(employeeDob);
     if (employeeRole) employee.employeeRole = employeeRole;
     if (department) employee.department = department;
+    if (category !== undefined) employee.category = category;
     if (position) employee.position = position;
     if (salary !== undefined) employee.salary = salary;
 
@@ -392,8 +436,11 @@ const updateEmployee = async (
     // @ts-ignore
     delete employeeResponse.employeePassword;
 
-    // Populate department for response
-    await employee.populate("department", "name");
+    // Populate department and category for response
+    await employee.populate([
+      { path: "department", select: "name" },
+      { path: "category", select: "name" },
+    ]);
 
     return sendResponse(
       res,
