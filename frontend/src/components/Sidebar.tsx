@@ -11,8 +11,8 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { Dashboard, People, MonetizationOn, Computer, AttachMoney } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
+import { Dashboard, People } from '@mui/icons-material';
+import { Link, useLocation } from 'react-router-dom';
 
 interface SidebarProps {
   open: boolean;
@@ -22,13 +22,11 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const location = useLocation();
 
   const sidebarItems = [
     { text: 'Dashboard', path: '/', icon: <Dashboard /> },
     { text: 'HR', path: '/hr', icon: <People /> },
-    { text: 'Sales', path: '/sales', icon: <MonetizationOn /> },
-    { text: 'Finance', path: '/finance', icon: <AttachMoney /> },
-    { text: 'IT', path: '/it', icon: <Computer /> },
   ];
 
   const sidebarContent = (
@@ -36,15 +34,26 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
       <List>
         {sidebarItems.map(item => (
           <ListItem key={item.text} disablePadding>
-            <ListItemButton component={Link} to={item.path} onClick={isMobile ? onClose : undefined} sx={{
-              '&:hover': {
-                backgroundColor: '#f58220',
-                color: 'white',
-                '& .MuiSvgIcon-root': {
-                  color: 'white',
+            <ListItemButton
+              component={Link}
+              to={item.path}
+              onClick={isMobile ? onClose : undefined}
+              sx={{
+                '&:hover': {
+                  backgroundColor: location.pathname === item.path ? '#f58220' : '#eee',
+                  color: location.pathname === item.path ? 'white' : 'inherit',
+                  '& .MuiSvgIcon-root': {
+                    color: location.pathname === item.path ? 'white' : 'inherit',
+                  },
                 },
-              },
-            }}>
+                backgroundColor: location.pathname === item.path ? '#f58220' : 'transparent',
+                color: location.pathname === item.path ? 'white' : 'inherit',
+                '& .MuiSvgIcon-root': {
+                  color: location.pathname === item.path ? 'white' : 'inherit',
+                },
+                mb: 1,
+              }}
+            >
               <ListItemIcon>
                 {item.icon}
               </ListItemIcon>
