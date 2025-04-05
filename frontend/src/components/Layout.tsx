@@ -39,14 +39,14 @@ const Layout = () => {
         }}
       >
         <Toolbar>
-          <IconButton
+          {isMobile && <IconButton
             color="inherit"
             edge="start"
             onClick={handleToggleSidebar}
             sx={{ mr: 2, color: 'white' }}
           >
             <Menu />
-          </IconButton>
+          </IconButton>}
           <Typography variant="h6" fontWeight="bold" noWrap component="div" sx={{ color: 'white' }}>
             Bacancy C-Suite
           </Typography>
@@ -60,10 +60,8 @@ const Layout = () => {
         sx={{
           flexGrow: 1,
           p: 3,
-          mt: '64px',
           ml: { 
             xs: 0,
-            md: sidebarOpen ? '250px' : 0
           },
           width: { 
             xs: '100%',
