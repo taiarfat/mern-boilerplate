@@ -1,9 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
-import { getDepartments, getExpenses, getHeadcount, getRevenue } from '../services';
+import {
+  getDepartments,
+  getExpenses,
+  getHeadcount,
+  getIncomeCategories,
+  getRevenue,
+} from '../services';
 import { RevenueExpensesRequest } from '../types/Expenses';
 
 export const useGetDepartments = () => {
   return useQuery({ queryKey: ['departments'], queryFn: getDepartments });
+};
+
+export const useGetIncomeCategories = () => {
+  return useQuery({ queryKey: ['income-categories'], queryFn: getIncomeCategories });
 };
 
 export const useGetHeadcount = ({ period, groupBy }: RevenueExpensesRequest) => {
@@ -13,16 +23,26 @@ export const useGetHeadcount = ({ period, groupBy }: RevenueExpensesRequest) => 
   });
 };
 
-export const useGetExpenses = ({ department, groupBy, period }: RevenueExpensesRequest) => {
+export const useGetExpenses = ({
+  department,
+  groupBy,
+  period,
+  categoryId,
+}: RevenueExpensesRequest) => {
   return useQuery({
-    queryKey: ['expenses', { department, groupBy, period }],
-    queryFn: () => getExpenses({ department, groupBy, period }),
+    queryKey: ['expenses', { department, groupBy, period, categoryId }],
+    queryFn: () => getExpenses({ department, groupBy, period, categoryId }),
   });
 };
 
-export const useGetRevenue = ({ department, groupBy, period }: RevenueExpensesRequest) => {
+export const useGetRevenue = ({
+  department,
+  groupBy,
+  period,
+  categoryId,
+}: RevenueExpensesRequest) => {
   return useQuery({
-    queryKey: ['revenue', { department, groupBy, period }],
-    queryFn: () => getRevenue({ department, groupBy, period }),
+    queryKey: ['revenue', { department, groupBy, period, categoryId }],
+    queryFn: () => getRevenue({ department, groupBy, period, categoryId }),
   });
 };

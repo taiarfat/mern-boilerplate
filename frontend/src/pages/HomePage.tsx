@@ -3,17 +3,19 @@ import { Container, Box, Grid, CircularProgress } from '@mui/material';
 import RevenueExpensesChart from '../components/Charts/RevenueExpensesChart';
 import AlertsCard from '../components/Charts/AlertsCard';
 import InsightsList from '../components/Charts/InsightsList';
-import { useGetDepartments } from '../hooks';
+import { useGetDepartments, useGetIncomeCategories } from '../hooks';
 import FutureRevenueExpensesChart from '../components/Charts/FutureRevenueExpensesChart';
 
 const HomePage: React.FC = () => {
   const { data, isLoading: isDepartmentsLoading } = useGetDepartments();
+  const { data: incomeCategories, isLoading: isIncomeCategoriesLoading } = useGetIncomeCategories();
 
-  if (isDepartmentsLoading) {
+  if (isDepartmentsLoading || isIncomeCategoriesLoading) {
     return <CircularProgress />;
   }
 
   const departments = data?.departments || [];
+  const categories = incomeCategories?.categories || [];
 
   return (
     <Box
@@ -31,7 +33,7 @@ const HomePage: React.FC = () => {
 
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <RevenueExpensesChart departments={departments} />
+            <RevenueExpensesChart departments={departments} categories={categories} />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FutureRevenueExpensesChart departments={departments} />

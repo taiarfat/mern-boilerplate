@@ -17,6 +17,7 @@ import { useTheme } from '@mui/material/styles';
 import Chart, { CoreChartOptions } from 'chart.js/auto';
 import { Department } from '../../types/Department';
 import { useGetExpenses, useGetRevenue } from '../../hooks';
+import { IncomeCategory } from '../../types/IncomeCategory';
 
 type ChartItem = {
   label: string;
@@ -27,23 +28,28 @@ type TimeView = 'quarterly' | 'yearly';
 
 type RevenueExpensesChartProps = {
   departments: Department[];
+  categories: IncomeCategory[];
 };
 
 const CHART_ID = 'revenue-expenses-chart';
 const DEFAULT_DEPARTMENT = 'all';
+const DEFAULT_CATEGORY = 'all';
 
-const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments }) => {
+const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments, categories }) => {
   const theme = useTheme();
   const [timeView, setTimeView] = useState<TimeView>('quarterly');
   const [department, setDepartment] = useState<string>(DEFAULT_DEPARTMENT);
+  const [category, setCategory] = useState<string>(DEFAULT_CATEGORY);
 
   const departmentParam = department === DEFAULT_DEPARTMENT ? undefined : department;
+  const categoryParam = category === DEFAULT_CATEGORY ? undefined : category as 'Software PVT' | 'System' | 'Product';
 
   const {
     data: revenueByQuarter,
     isLoading: isRevenueByQuarterLoading,
     error: revenueQuarterError,
   } = useGetRevenue({
+    categoryId: categoryParam,
     department: departmentParam,
     groupBy: 'quarter',
     period: 'last-year',
@@ -54,6 +60,7 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
     isLoading: isRevenueByMonthLoading,
     error: revenueMonthError,
   } = useGetRevenue({
+    categoryId: categoryParam,
     department: departmentParam,
     groupBy: 'month',
     period: 'last-year',
@@ -64,6 +71,7 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
     isLoading: isExpensesByQuarterLoading,
     error: expensesQuarterError,
   } = useGetExpenses({
+    categoryId: categoryParam,
     department: departmentParam,
     groupBy: 'quarter',
     period: 'last-year',
@@ -74,6 +82,7 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
     isLoading: isExpensesByMonthLoading,
     error: expensesMonthError,
   } = useGetExpenses({
+    categoryId: categoryParam,
     department: departmentParam,
     groupBy: 'month',
     period: 'last-year',
@@ -196,6 +205,8 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
     );
   }
 
+  console.log(category);
+
   return (
     <Card>
       <CardContent>
@@ -203,7 +214,24 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
           Revenue & Expenses Over Time
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <FormControl size="small" sx={{ minWidth: 150, mr: 2 }}>
+          <Box>
+            <FormControl size="small" sx={{ minWidth: 150, mr: 2 }}>
+              <InputLabel id="revenue-category-label">Category</InputLabel>
+              <Select
+                labelId="revenue-category-label"
+                value={category}
+                label="Category"
+                onChange={e => setCategory(e.target.value as string)}
+              >
+                <MenuItem value={DEFAULT_CATEGORY}>All Categories</MenuItem>
+                {categories.map(cat => (
+                  <MenuItem key={cat._id} value={cat._id}>
+                    {cat.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 150, mr: 2 }}>
             <InputLabel id="revenue-department-label">Department</InputLabel>
             <Select
               labelId="revenue-department-label"
@@ -219,6 +247,7 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
               ))}
             </Select>
           </FormControl>
+          </Box>
           <Tabs value={timeView} onChange={handleTimeViewChange} aria-label="time period tabs">
             <Tab label="Quarterly" value="quarterly" />
             <Tab label="Yearly" value="yearly" />
