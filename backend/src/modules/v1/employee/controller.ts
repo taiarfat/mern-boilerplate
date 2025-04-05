@@ -10,10 +10,9 @@ import { httpStatusCodes, responseStatus } from "../../../constants/constants";
 import { sendResponse } from "../../../helpers/response";
 import Employee from "../../../models/Employee";
 import Department from "../../../models/Department";
-import {
-  encryptPassword,
-  comparePassword,
-} from "../../../helpers/encryptPassword";
+import Project from "../../../models/Project";
+import Income from "../../../models/Income";
+import { encryptPassword } from "../../../helpers/encryptPassword";
 
 /**
  * Get all employees
@@ -29,7 +28,7 @@ const getAllEmployees = async (
   next: NextFunction
 ): Promise<Response | void> => {
   try {
-    const { department, position } = req.query;
+    const { department, position, category, projectType } = req.query;
 
     // Build query
     const query: any = {};
@@ -42,9 +41,62 @@ const getAllEmployees = async (
       query.position = position;
     }
 
+    // Direct category filter (employee's assigned category)
+    if (category) {
+      query.category = category;
+    }
+
+    // Handle category and projectType filters
+    if (projectType) {
+      // We need to find projects that match the criteria
+      const projectQuery: any = {};
+
+      projectQuery.type = projectType;
+
+      // If we have projectType filter or both filters
+      if (Object.keys(projectQuery).length > 0) {
+        const projects = await Project.find(projectQuery);
+
+        if (projects.length === 0) {
+          // No projects match the criteria, return empty result
+          return sendResponse(
+            res,
+            httpStatusCodes.OK,
+            responseStatus.SUCCESS,
+            "Employees retrieved successfully",
+            []
+          );
+        }
+
+        // Get all employee IDs from these projects
+        const employeeIds = new Set();
+
+        projects.forEach((project) => {
+          project.team.forEach((empId) => {
+            employeeIds.add(empId.toString());
+          });
+        });
+
+        // Add employee filter to query
+        if (employeeIds.size > 0) {
+          query._id = { $in: Array.from(employeeIds) };
+        } else {
+          // No employees found in these projects
+          return sendResponse(
+            res,
+            httpStatusCodes.OK,
+            responseStatus.SUCCESS,
+            "Employees retrieved successfully",
+            []
+          );
+        }
+      }
+    }
+
     const employees = await Employee.find(query)
       .select("-employeePassword")
       .populate("department", "name")
+      .populate("category", "name")
       .sort({ employeeName: 1 });
 
     return sendResponse(
@@ -78,7 +130,8 @@ const getEmployeeById = async (
 
     const employee = await Employee.findById(id)
       .select("-employeePassword")
-      .populate("department", "name");
+      .populate("department", "name")
+      .populate("category", "name");
 
     if (!employee) {
       return sendResponse(
@@ -124,6 +177,7 @@ const createEmployee = async (
       employeeDob,
       employeeRole,
       department,
+      category,
       position,
       salary,
     } = req.body;
@@ -150,6 +204,21 @@ const createEmployee = async (
         responseStatus.ERROR,
         "Invalid department"
       );
+    }
+
+    // Validate category if provided
+    if (category) {
+      const Category = require("../../../models/Category").default;
+      const categoryExists = await Category.findById(category);
+
+      if (!categoryExists) {
+        return sendResponse(
+          res,
+          httpStatusCodes["Bad Request"],
+          responseStatus.ERROR,
+          "Invalid category"
+        );
+      }
     }
 
     // Validate position
@@ -196,6 +265,7 @@ const createEmployee = async (
       employeeDob: new Date(employeeDob),
       employeeRole,
       department,
+      category, // Include category field (can be undefined)
       position,
       salary,
     });
@@ -205,8 +275,11 @@ const createEmployee = async (
     // @ts-ignore
     delete employeeResponse.employeePassword;
 
-    // Populate department for response
-    await employee.populate("department", "name");
+    // Populate department and category for response
+    await employee.populate([
+      { path: "department", select: "name" },
+      { path: "category", select: "name" },
+    ]);
 
     return sendResponse(
       res,
@@ -244,6 +317,7 @@ const updateEmployee = async (
       employeeDob,
       employeeRole,
       department,
+      category,
       position,
       salary,
     } = req.body;
@@ -284,6 +358,21 @@ const updateEmployee = async (
           httpStatusCodes["Bad Request"],
           responseStatus.ERROR,
           "Invalid department"
+        );
+      }
+    }
+
+    // Validate category if provided
+    if (category) {
+      const Category = require("../../../models/Category").default;
+      const categoryExists = await Category.findById(category);
+
+      if (!categoryExists) {
+        return sendResponse(
+          res,
+          httpStatusCodes["Bad Request"],
+          responseStatus.ERROR,
+          "Invalid category"
         );
       }
     }
@@ -336,6 +425,7 @@ const updateEmployee = async (
     if (employeeDob) employee.employeeDob = new Date(employeeDob);
     if (employeeRole) employee.employeeRole = employeeRole;
     if (department) employee.department = department;
+    if (category !== undefined) employee.category = category;
     if (position) employee.position = position;
     if (salary !== undefined) employee.salary = salary;
 
@@ -346,8 +436,11 @@ const updateEmployee = async (
     // @ts-ignore
     delete employeeResponse.employeePassword;
 
-    // Populate department for response
-    await employee.populate("department", "name");
+    // Populate department and category for response
+    await employee.populate([
+      { path: "department", select: "name" },
+      { path: "category", select: "name" },
+    ]);
 
     return sendResponse(
       res,
@@ -426,7 +519,7 @@ const deleteEmployee = async (
  * @returns Response with employee summary by department
  */
 const getEmployeeSummaryByDepartment = async (
-  req: AuthRequest,
+  _req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<Response | void> => {
@@ -487,7 +580,7 @@ const getEmployeeSummaryByDepartment = async (
  * @returns Response with employee summary by position
  */
 const getEmployeeSummaryByPosition = async (
-  req: AuthRequest,
+  _req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<Response | void> => {
