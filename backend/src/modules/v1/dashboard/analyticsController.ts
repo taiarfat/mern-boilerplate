@@ -28,7 +28,7 @@ import mongoose from "mongoose";
 export const getRevenueChartData = async (req: AuthRequest, res: Response, next: NextFunction): Promise<Response | void> => {
   try {
     // Extract query parameters
-    const { period = 'last-year', department, groupBy = 'month', customStartDate, customEndDate } = req.query;
+    const { period = 'last-year', department, projectType, groupBy = 'month', customStartDate, customEndDate } = req.query;
 
     // Get date range based on period
     const dateRange = getDateRange(
@@ -37,17 +37,51 @@ export const getRevenueChartData = async (req: AuthRequest, res: Response, next:
       customEndDate as string
     );
 
-    // Build query
-    const query: any = {
+    // Build query for income data
+    const incomeQuery: any = {
       yearMonth: { $gte: dateRange.startYearMonth, $lte: dateRange.endYearMonth }
     };
 
     // Get all months in the range
     const allMonths = generateMonthsArray(dateRange.startYearMonth, dateRange.endYearMonth);
 
+    // If projectType is specified, filter by project type
+    let projectIds: mongoose.Types.ObjectId[] = [];
+
+    if (projectType) {
+      // Find projects of the specified type
+      const projects = await Project.find({ type: projectType }).select('_id');
+      projectIds = projects.map(p => p._id);
+
+      // Add project filter to query
+      if (projectIds.length > 0) {
+        incomeQuery.project = { $in: projectIds };
+      } else {
+        // No projects of this type, return empty data
+        return sendResponse(
+          res,
+          httpStatusCodes.OK,
+          responseStatus.SUCCESS,
+          "Revenue chart data retrieved successfully",
+          {
+            chartData: [],
+            totalRevenue: 0,
+            period: period as string,
+            groupBy: groupBy as string,
+            projectType: projectType as string,
+            department: null,
+            dateRange: {
+              startDate: dateRange.startDate,
+              endDate: dateRange.endDate
+            }
+          }
+        );
+      }
+    }
+
     // Aggregate income data by month
     const incomeData = await Income.aggregate([
-      { $match: query },
+      { $match: incomeQuery },
       {
         $group: {
           _id: "$yearMonth",
@@ -97,15 +131,22 @@ export const getRevenueChartData = async (req: AuthRequest, res: Response, next:
       const departmentEmployeeIds = departmentEmployees.map(emp => emp._id.toString());
 
       // Get all projects with income in the date range
-      const projectsWithIncome = await Income.distinct('project', query);
+      const projectsWithIncome = await Income.distinct('project', incomeQuery);
 
       // Filter out null projects
       const validProjectIds = projectsWithIncome.filter(id => id !== null);
 
       // Get project details with team members
-      const projects = await Project.find({
+      const projectFilter: any = {
         _id: { $in: validProjectIds }
-      }).select('_id team');
+      };
+
+      // Add project type filter if specified
+      if (projectType) {
+        projectFilter.type = projectType;
+      }
+
+      const projects = await Project.find(projectFilter).select('_id team');
 
       // Create a map to store department income by month
       const departmentIncomeByMonth: Record<string, number> = {};
@@ -136,7 +177,7 @@ export const getRevenueChartData = async (req: AuthRequest, res: Response, next:
         const projectIncomeData = await Income.aggregate([
           {
             $match: {
-              ...query,
+              yearMonth: { $gte: dateRange.startYearMonth, $lte: dateRange.endYearMonth },
               project: project._id
             }
           },
@@ -206,6 +247,7 @@ export const getRevenueChartData = async (req: AuthRequest, res: Response, next:
         period: period as string,
         groupBy: groupBy as string,
         department: departmentName,
+        projectType: projectType as string || null,
         dateRange: {
           startDate: dateRange.startDate,
           endDate: dateRange.endDate
@@ -396,13 +438,13 @@ export const getHeadcountChartData = async (req: AuthRequest, res: Response, nex
     }
 
     // Log the query and date range for debugging
-    console.log('Query:', JSON.stringify(query));
-    console.log('Date range:', JSON.stringify({
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate,
-      startYearMonth: dateRange.startYearMonth,
-      endYearMonth: dateRange.endYearMonth
-    }));
+    // console.log('Query:', JSON.stringify(query));
+    // console.log('Date range:', JSON.stringify({
+    //   startDate: dateRange.startDate,
+    //   endDate: dateRange.endDate,
+    //   startYearMonth: dateRange.startYearMonth,
+    //   endYearMonth: dateRange.endYearMonth
+    // }));
 
     // Get all departments
     const departments = await Department.find();
@@ -413,17 +455,17 @@ export const getHeadcountChartData = async (req: AuthRequest, res: Response, nex
 
     // Get all employees
     const employees = await Employee.find(query);
-    console.log(`Found ${employees.length} employees matching the query`);
+    // console.log(`Found ${employees.length} employees matching the query`);
 
     // Log a few employees for debugging
-    if (employees.length > 0) {
-      console.log('Sample employees:', employees.slice(0, 3).map(emp => ({
-        id: emp._id.toString(),
-        department: emp.department.toString(),
-        position: emp.position,
-        createdAt: emp.createdAt
-      })));
-    }
+    // if (employees.length > 0) {
+      // console.log('Sample employees:', employees.slice(0, 3).map(emp => ({
+      //   id: emp._id.toString(),
+      //   department: emp.department.toString(),
+      //   position: emp.position,
+      //   createdAt: emp.createdAt
+      // })));
+    // }
 
     // Create a map to track department counts by month
     const departmentCountsByMonth: Record<string, Record<string, number>> = {};
@@ -436,8 +478,8 @@ export const getHeadcountChartData = async (req: AuthRequest, res: Response, nex
       });
     });
 
-    console.log('Departments:', departments.map(d => d.name));
-    console.log('All months:', allMonths);
+    // console.log('Departments:', departments.map(d => d.name));
+    // console.log('All months:', allMonths);
 
     // For testing, add some dummy data to ensure we have values
     if (departments.length > 0 && allMonths.length > 0) {
@@ -473,9 +515,9 @@ export const getHeadcountChartData = async (req: AuthRequest, res: Response, nex
     */
 
     // Log the department counts for the first month to verify data
-    if (allMonths.length > 0) {
-      console.log('Department counts for first month:', departmentCountsByMonth[allMonths[0]]);
-    }
+    // if (allMonths.length > 0) {
+    //   console.log('Department counts for first month:', departmentCountsByMonth[allMonths[0]]);
+    // }
 
     // Define the department count interface
     interface DepartmentCount {
