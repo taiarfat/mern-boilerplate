@@ -63,10 +63,11 @@ const Layout = () => {
           mt: '64px',
           ml: { 
             xs: 0,
+            md: sidebarOpen ? '250px' : 0
           },
           width: { 
             xs: '100%',
-            md: sidebarOpen ? 'calc(100% - 250px)' : '100%' 
+            md: '100%' 
           },
           transition: theme.transitions.create(['margin', 'width'], {
             easing: theme.transitions.easing.easeOut,
