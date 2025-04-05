@@ -1,21 +1,18 @@
 import React, { useState } from 'react';
+import { Outlet } from 'react-router-dom';
 import { 
   AppBar, 
-  Box, 
   Toolbar, 
   Typography, 
   IconButton, 
   useMediaQuery,
-  useTheme
+  useTheme,
+  Grid
 } from '@mui/material';
 import { Menu } from '@mui/icons-material';
 import Sidebar from './Sidebar';
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
-
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -33,7 +30,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Grid sx={{ display: 'flex' }}>
       <AppBar 
         position="fixed" 
         sx={{ 
@@ -46,19 +43,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             color="inherit"
             edge="start"
             onClick={handleToggleSidebar}
-            sx={{ mr: 2 }}
+            sx={{ mr: 2, color: 'white' }}
           >
             <Menu />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            Bac Hack
+          <Typography variant="h6" fontWeight="bold" noWrap component="div" sx={{ color: 'white' }}>
+            Bacancy C-Suite
           </Typography>
         </Toolbar>
       </AppBar>
 
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <Box
+      <Grid
         component="main"
         sx={{
           flexGrow: 1,
@@ -66,7 +63,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           mt: '64px',
           ml: { 
             xs: 0,
-            md: sidebarOpen ? '250px' : 0 
           },
           width: { 
             xs: '100%',
@@ -78,9 +74,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           }),
         }}
       >
-        {children}
-      </Box>
-    </Box>
+        <Outlet />
+      </Grid>
+    </Grid>
   );
 };
 
