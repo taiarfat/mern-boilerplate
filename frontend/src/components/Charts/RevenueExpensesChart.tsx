@@ -111,7 +111,8 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
     isExpensesByQuarterLoading ||
     isExpensesByMonthLoading;
 
-  const hasError = revenueQuarterError || revenueMonthError || expensesQuarterError || expensesMonthError;
+  const hasError =
+    revenueQuarterError || revenueMonthError || expensesQuarterError || expensesMonthError;
 
   const createChartData = useMemo(
     () => (labels: string[], revenueData: number[], expensesData: number[]) => ({
@@ -220,8 +221,8 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
           Revenue & Expenses Over Time
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Box>
-            <FormControl size="small" sx={{ minWidth: 150, mr: 2 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, maxWidth: '60%' }}>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
               <InputLabel id="revenue-category-label">Category</InputLabel>
               <Select
                 labelId="revenue-category-label"
