@@ -51,6 +51,7 @@ route.post("/generate-sample-data", authMiddleware as any, controller.generateSa
  *
  * @query {string} [period] - Predefined period (last-month, last-3-months, last-6-months, last-quarter, current-quarter, year-to-date, last-year, last-2-years, all-time, custom)
  * @query {string} [department] - Department ID to filter by
+ * @query {string} [projectType] - Filter by project type (fixed, dedicated)
  * @query {string} [groupBy] - Group data by (month, quarter)
  * @query {string} [customStartDate] - Custom start date (YYYY-MM-DD) - required if period is 'custom'
  * @query {string} [customEndDate] - Custom end date (YYYY-MM-DD) - required if period is 'custom'
