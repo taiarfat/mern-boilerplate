@@ -7,6 +7,7 @@ import {
   getFutureRevenue,
   getHeadcount,
   getIncomeCategories,
+  getInsights,
   getRevenue,
 } from '../services';
 import { RevenueExpensesRequest } from '../types/Expenses';
@@ -54,6 +55,10 @@ export const useGetRevenue = ({
 
 export const useGetAnomalies = () => {
   return useQuery({ queryKey: ['anomalies'], queryFn: getAnomalies });
+};
+
+export const useGetInsights = () => {
+  return useQuery({ queryKey: ['insights'], queryFn: getInsights });
 };
 
 export const useGetFutureRevenue = ({

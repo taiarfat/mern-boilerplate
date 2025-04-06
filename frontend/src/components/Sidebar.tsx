@@ -11,7 +11,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { Dashboard, People, Assignment, MonetizationOn, AccountBalance } from '@mui/icons-material';
+import { Dashboard, People, Assignment, MonetizationOn, AccountBalance, BarChart } from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
 
 interface SidebarProps {
@@ -30,6 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
     { text: 'Projects', path: '/projects', icon: <Assignment /> },
     { text: 'Income', path: '/income', icon: <MonetizationOn /> },
     { text: 'Expenses', path: '/expenses', icon: <AccountBalance /> },
+    { text: 'Insights', path: '/insights', icon: <BarChart /> },
   ];
 
   const sidebarContent = (

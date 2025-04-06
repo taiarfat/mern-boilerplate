@@ -3,6 +3,7 @@ import { DepartmentResponse } from '../types/Department';
 import { RevenueExpensesRequest, RevenueExpensesResponse } from '../types/Expenses';
 import { HeadCountResponse } from '../types/HeadCount';
 import { IncomeCategoryResponse } from '../types/IncomeCategory';
+import { InsightResponse } from '../types/Insight';
 import api from './api';
 
 export const getDepartments = async (): Promise<DepartmentResponse> => {
@@ -53,6 +54,11 @@ export const getRevenue = async ({
 
 export const getAnomalies = async (): Promise<AnomalyResponse> => {
   const response = await api.get('/dashboard/revenue-drop-alert');
+  return response.data;
+};
+
+export const getInsights = async (): Promise<InsightResponse> => {
+  const response = await api.get('/dashboard/actionable-recommendations');
   return response.data;
 };
 
