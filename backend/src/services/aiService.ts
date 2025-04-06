@@ -204,34 +204,8 @@ class AIService {
         },
         {
           $sort: { yearMonth: 1 }
-        },
-        {
-          $limit: 10
         }
       ]);
-
-      // Also get monthly totals for easier analysis
-      // const monthlyTotals = await Income.aggregate([
-      //   {
-      //     $match: matchStage
-      //   },
-      //   {
-      //     $group: {
-      //       _id: "$yearMonth",
-      //       totalAmount: { $sum: "$amount" }
-      //     }
-      //   },
-      //   {
-      //     $project: {
-      //       _id: 0,
-      //       yearMonth: "$_id",
-      //       totalAmount: 1
-      //     }
-      //   },
-      //   {
-      //     $sort: { yearMonth: 1 }
-      //   }
-      // ]);
 
       return {
         detailedData: incomeData,
@@ -267,7 +241,7 @@ class AIService {
           // Fetch income data from the database
           const incomeData = await this.fetchIncomeData(params);
 
-          return `You are a financial analyst specialized in predicting future revenue anomalies and potential risks.Please analyze the company's historical revenue data and identify any patterns that could indicate FUTURE revenue anomalies or risks.Focus on:1. Identifying trends that suggest future revenue drops2. Predicting potential revenue anomalies in the upcoming months3. Early warning signs in the current data that indicate future problems4. Seasonal patterns that might affect future revenue5. External factors that could impact revenue in the near futureHere is the company's historical revenue data, aggregated by month, project, and category:${JSON.stringify(incomeData, null, 2)}Based on this historical data, predict potential future revenue anomalies for the next 3-6 months.Format your response as a JSON object with the following structure:{"predictedAnomalies": [{"period": "YYYY-MM","riskLevel": "high/medium/low","description": "Description of the predicted anomaly or risk","earlyWarningIndicators": ["Indicator 1", "Indicator 2"],"preventativeMeasures": ["Measure 1", "Measure 2"]}],"summary": "Overall summary of predictions and recommendations for preventing future revenue issues"}If no future anomalies are predicted, return an empty array for predictedAnomalies and a summary explaining why the revenue outlook appears stable.`;
+          return `You are a financial analyst specialized in predicting future revenue anomalies and potential risks.Please analyze the company's historical revenue data and identify any patterns that could indicate FUTURE revenue anomalies or risks.Focus on:1. Identifying trends that suggest future revenue drops2. Predicting potential revenue anomalies in the upcoming months3. Early warning signs in the current data that indicate future problems4. Seasonal patterns that might affect future revenue5. External factors that could impact revenue in the near futureHere is the company's historical revenue data, aggregated by month, project, and category:${JSON.stringify(incomeData)}Based on this historical data, predict potential future revenue anomalies for the next 3-6 months.Format your response as a JSON object with the following structure:{"predictedAnomalies": [{"period": "YYYY-MM","riskLevel": "high/medium/low","description": "Description of the predicted anomaly or risk","earlyWarningIndicators": ["Indicator 1", "Indicator 2"],"preventativeMeasures": ["Measure 1", "Measure 2"]}],"summary": "Overall summary of predictions and recommendations for preventing future revenue issues"}If no future anomalies are predicted, return an empty array for predictedAnomalies and a summary explaining why the revenue outlook appears stable.`;
 
       case `${InsightType.TREND}_`:
         return ``;
