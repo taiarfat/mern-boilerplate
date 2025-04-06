@@ -2,9 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import {
   getAnomalies,
   getDepartments,
+  getEmployees,
   getExpenses,
+  getExpensesList,
   getHeadcount,
+  getIncome,
   getIncomeCategories,
+  getProjects,
   getRevenue,
 } from '../services';
 import { RevenueExpensesRequest } from '../types/Expenses';
@@ -52,4 +56,20 @@ export const useGetRevenue = ({
 
 export const useGetAnomalies = () => {
   return useQuery({ queryKey: ['anomalies'], queryFn: getAnomalies });
+};
+
+export const useGetEmployees = () => {
+  return useQuery({ queryKey: ['employees'], queryFn: getEmployees });
+};
+
+export const useGetProjects = () => {
+  return useQuery({ queryKey: ['projects'], queryFn: getProjects });
+};
+
+export const useGetIncome = () => {
+  return useQuery({ queryKey: ['income'], queryFn: getIncome });
+};
+
+export const useGetExpensesList = () => {
+  return useQuery({ queryKey: ['expenses-list'], queryFn: getExpensesList });
 };

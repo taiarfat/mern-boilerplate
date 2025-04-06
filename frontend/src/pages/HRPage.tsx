@@ -1,17 +1,19 @@
-import { Grid, Button, Box } from '@mui/material'
+import { Grid, Button, Box, CircularProgress, Typography } from '@mui/material'
 import DataTable, { Column } from '../components/DataTable'
 import { useState } from 'react'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import FileUploadModal from '../components/FileUploadModal'
+import { useGetEmployees } from '../hooks'
 
-// Sample data for HR page
+// Define columns for HR page
 const columns: readonly Column[] = [
-  { id: 'name', label: 'Name', minWidth: 170 },
-  { id: 'code', label: 'Employee ID', minWidth: 100 },
+  { id: 'employeeName', label: 'Name', minWidth: 170 },
+  { id: 'employeeEmail', label: 'Email', minWidth: 170 },
   {
     id: 'department',
     label: 'Department',
     minWidth: 170,
+    format: (value: unknown) => (value as { name: string })?.name || '',
   },
   {
     id: 'position',
@@ -29,34 +31,9 @@ const columns: readonly Column[] = [
   },
 ];
 
-interface HRData {
-  name: string;
-  code: string;
-  department: string;
-  position: string;
-  salary: number;
-  [key: string]: unknown;
-}
-
-// Sample HR data
-const hrData: HRData[] = [
-  { name: 'John Doe', code: 'EMP001', department: 'Engineering', position: 'Senior Developer', salary: 110000 },
-  { name: 'Jane Smith', code: 'EMP002', department: 'HR', position: 'HR Manager', salary: 95000 },
-  { name: 'Mike Johnson', code: 'EMP003', department: 'Marketing', position: 'Marketing Specialist', salary: 85000 },
-  { name: 'Sarah Williams', code: 'EMP004', department: 'Sales', position: 'Sales Executive', salary: 92000 },
-  { name: 'David Brown', code: 'EMP005', department: 'Engineering', position: 'Developer', salary: 90000 },
-  { name: 'Emily Davis', code: 'EMP006', department: 'Finance', position: 'Financial Analyst', salary: 88000 },
-  { name: 'Robert Wilson', code: 'EMP007', department: 'Engineering', position: 'QA Engineer', salary: 87000 },
-  { name: 'Jessica Miller', code: 'EMP008', department: 'HR', position: 'Recruiter', salary: 78000 },
-  { name: 'Thomas Moore', code: 'EMP009', department: 'Operations', position: 'Operations Manager', salary: 98000 },
-  { name: 'Lisa Taylor', code: 'EMP010', department: 'Marketing', position: 'Content Writer', salary: 75000 },
-  { name: 'Kevin Anderson', code: 'EMP011', department: 'Sales', position: 'Sales Associate', salary: 82000 },
-  { name: 'Michelle Jackson', code: 'EMP012', department: 'Finance', position: 'Accountant', salary: 79000 },
-];
-
 const HRPage = () => {
   const [open, setOpen] = useState(false)
-  const [tableData, setTableData] = useState<HRData[]>(hrData)
+  const { data: employees, isLoading, isError } = useGetEmployees()
 
   const handleOpen = () => setOpen(true)
   const handleClose = () => setOpen(false)
@@ -76,10 +53,6 @@ const HRPage = () => {
         
         // Mock processing - in real implementation, parse CSV into HRData objects
         console.log('Processing CSV content:', csvContent.substring(0, 100) + '...');
-        
-        // Example of updating data (with the same data for demo purposes)
-        // In a real implementation, this would be the parsed CSV data
-        setTableData([...hrData]);
       }
     };
     
@@ -109,7 +82,18 @@ const HRPage = () => {
             Upload Data
           </Button>
         </Box>
-        <DataTable columns={columns} rows={tableData} />
+        
+        {isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : isError ? (
+          <Typography color="error" align="center">
+            Error loading employee data. Please try again later.
+          </Typography>
+        ) : (
+          <DataTable columns={columns} rows={employees || []} />
+        )}
         
         <FileUploadModal 
           open={open}
