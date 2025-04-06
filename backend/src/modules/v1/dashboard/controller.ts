@@ -639,8 +639,12 @@ const getRevenueDropAlert = async (
 
       // Format dates for yearMonth query if dates are available
       if (start && end) {
-        startYearMonth = `${start.getFullYear()}-${(start.getMonth() + 1).toString().padStart(2, '0')}`;
-        endYearMonth = `${end.getFullYear()}-${(end.getMonth() + 1).toString().padStart(2, '0')}`;
+        startYearMonth = `${start.getFullYear()}-${(start.getMonth() + 1)
+          .toString()
+          .padStart(2, "0")}`;
+        endYearMonth = `${end.getFullYear()}-${(end.getMonth() + 1)
+          .toString()
+          .padStart(2, "0")}`;
       }
     }
 
@@ -656,12 +660,12 @@ const getRevenueDropAlert = async (
           ...(startYearMonth && { startYearMonth }),
           ...(endYearMonth && { endYearMonth }),
           // Flag to indicate if date filtering should be applied
-          applyDateFilter: !!(period || (startDate && endDate))
+          applyDateFilter: !!(period || (startDate && endDate)),
         },
         additionalParams: {
           alertType: "drop",
-          period: period as string || 'all-time'
-        }
+          period: (period as string) || "all-time",
+        },
       },
       req.baseUrl + req.url
     );
@@ -724,8 +728,12 @@ const getActionableRecommendations = async (
 
       // Format dates for yearMonth query if dates are available
       if (start && end) {
-        startYearMonth = `${start.getFullYear()}-${(start.getMonth() + 1).toString().padStart(2, '0')}`;
-        endYearMonth = `${end.getFullYear()}-${(end.getMonth() + 1).toString().padStart(2, '0')}`;
+        startYearMonth = `${start.getFullYear()}-${(start.getMonth() + 1)
+          .toString()
+          .padStart(2, "0")}`;
+        endYearMonth = `${end.getFullYear()}-${(end.getMonth() + 1)
+          .toString()
+          .padStart(2, "0")}`;
       }
     }
 
@@ -743,11 +751,11 @@ const getActionableRecommendations = async (
           ...(department && { department }),
           ...(category && { category }),
           // Flag to indicate if date filtering should be applied
-          applyDateFilter: !!(period || (startDate && endDate))
+          applyDateFilter: !!(period || (startDate && endDate)),
         },
         additionalParams: {
-          period: period as string || 'last-year'
-        }
+          period: (period as string) || "last-year",
+        },
       },
       req.baseUrl + req.url
     );
@@ -757,7 +765,7 @@ const getActionableRecommendations = async (
       httpStatusCodes.OK,
       responseStatus.SUCCESS,
       "Actionable business recommendations retrieved successfully",
-      recommendations
+      { insights: recommendations }
     );
   } catch (err) {
     console.error("Error in getActionableRecommendations:", err);
