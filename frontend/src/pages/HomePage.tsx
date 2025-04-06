@@ -1,10 +1,10 @@
 import React from 'react';
 import { Container, Box, Grid, CircularProgress } from '@mui/material';
-import RevenueExpensesChart from '../components/Charts/RevenueExpensesChart';
-import AnomalyAlertsCardList from '../components/Charts/AnomalyAlertsCardList';
+import RevenueExpensesChart from '../components/HomePageComponents/RevenueExpensesChart';
+import AnomalyAlertsCardList from '../components/HomePageComponents/AnomalyAlertsCardList';
 // import InsightsList from '../components/Charts/InsightsList';
 import { useGetDepartments, useGetIncomeCategories } from '../hooks';
-import FutureRevenueExpensesChart from '../components/Charts/FutureRevenueExpensesChart';
+import FutureRevenueExpensesChart from '../components/HomePageComponents/FutureRevenueExpensesChart';
 
 const HomePage: React.FC = () => {
   const { data, isLoading: isDepartmentsLoading } = useGetDepartments();
