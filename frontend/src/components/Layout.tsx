@@ -63,7 +63,7 @@ const Layout = () => {
           ml: { 
             xs: 0,
           },
-          width: { 
+          width: {
             xs: '100%',
             md: '100%' 
           },
@@ -79,4 +79,4 @@ const Layout = () => {
   );
 };
 
-export default Layout; 
+export default Layout;

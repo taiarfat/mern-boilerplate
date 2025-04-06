@@ -22,21 +22,21 @@ interface AuthResponse {
 
 export const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
   const response = await api.post<AuthResponse>('/auth/login', credentials);
-  
+
   if (response.data.accessToken) {
     localStorage.setItem('token', response.data.accessToken);
   }
-  
+
   return response.data;
 };
 
 export const signup = async (credentials: SignupCredentials): Promise<AuthResponse> => {
   const response = await api.post<AuthResponse>('/auth/register', credentials);
-  
+
   if (response.data.accessToken) {
     localStorage.setItem('token', response.data.accessToken);
   }
-  
+
   return response.data;
 };
 
@@ -46,4 +46,4 @@ export const logout = (): void => {
 
 export const isAuthenticated = (): boolean => {
   return localStorage.getItem('token') !== null;
-}; 
+};
