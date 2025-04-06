@@ -3,6 +3,8 @@ import {
   getAnomalies,
   getDepartments,
   getExpenses,
+  getFutureExpenses,
+  getFutureRevenue,
   getHeadcount,
   getIncomeCategories,
   getRevenue,
@@ -52,4 +54,26 @@ export const useGetRevenue = ({
 
 export const useGetAnomalies = () => {
   return useQuery({ queryKey: ['anomalies'], queryFn: getAnomalies });
+};
+
+export const useGetFutureRevenue = ({
+  department,
+  categoryId,
+  projectType,
+}: RevenueExpensesRequest) => {
+  return useQuery({
+    queryKey: ['future-revenue', { department, categoryId, projectType }],
+    queryFn: () => getFutureRevenue({ department, categoryId, projectType }),
+  });
+};
+
+export const useGetFutureExpenses = ({
+  department,
+  categoryId,
+  projectType,
+}: RevenueExpensesRequest) => {
+  return useQuery({
+    queryKey: ['future-expenses', { department, categoryId, projectType }],
+    queryFn: () => getFutureExpenses({ department, categoryId, projectType }),
+  });
 };

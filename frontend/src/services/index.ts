@@ -55,3 +55,25 @@ export const getAnomalies = async (): Promise<AnomalyResponse> => {
   const response = await api.get('/dashboard/revenue-drop-alert');
   return response.data;
 };
+
+export const getFutureRevenue = async ({
+  department,
+  categoryId,
+  projectType,
+}: RevenueExpensesRequest): Promise<RevenueExpensesResponse> => {
+  const response = await api.get('/dashboard/forecast/revenue', {
+    params: { department, categoryId, projectType },
+  });
+  return response.data;
+};
+
+export const getFutureExpenses = async ({
+  department,
+  categoryId,
+  projectType,
+}: RevenueExpensesRequest): Promise<RevenueExpensesResponse> => {
+  const response = await api.get('/dashboard/forecast/expenses', {
+    params: { department, categoryId, projectType },
+  });
+  return response.data;
+};

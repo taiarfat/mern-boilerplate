@@ -16,7 +16,7 @@ import { Line } from 'react-chartjs-2';
 import { useTheme } from '@mui/material/styles';
 import Chart, { CoreChartOptions } from 'chart.js/auto';
 import { Department } from '../../types/Department';
-import { useGetExpenses, useGetRevenue } from '../../hooks';
+import { useGetExpenses, useGetFutureRevenue } from '../../hooks';
 
 type ChartItem = {
   label: string;
@@ -40,33 +40,11 @@ const FutureRevenueExpensesChart: React.FC<FutureRevenueExpensesChartProps> = ({
   const departmentParam = department === DEFAULT_DEPARTMENT ? undefined : department;
 
   const {
-    data: futureRevenueByQuarter,
-    isLoading: isFutureRevenueByQuarterLoading,
-    error: futureRevenueQuarterError,
-  } = useGetRevenue({
-    department: departmentParam,
-    groupBy: 'quarter',
-    period: 'last-year', // Ideally would be 'future' or similar
-  });
-
-  const {
     data: futureRevenueByMonth,
     isLoading: isFutureRevenueByMonthLoading,
     error: futureRevenueMonthError,
-  } = useGetRevenue({
+  } = useGetFutureRevenue({
     department: departmentParam,
-    groupBy: 'month',
-    period: 'last-year', // Ideally would be 'future' or similar
-  });
-
-  const {
-    data: futureExpensesByQuarter,
-    isLoading: isFutureExpensesByQuarterLoading,
-    error: futureExpensesQuarterError,
-  } = useGetExpenses({
-    department: departmentParam,
-    groupBy: 'quarter',
-    period: 'last-year', // Ideally would be 'future' or similar
   });
 
   const {
@@ -75,8 +53,6 @@ const FutureRevenueExpensesChart: React.FC<FutureRevenueExpensesChartProps> = ({
     error: futureExpensesMonthError,
   } = useGetExpenses({
     department: departmentParam,
-    groupBy: 'month',
-    period: 'last-year', // Ideally would be 'future' or similar
   });
 
   // Clean up chart instance on component unmount
@@ -87,17 +63,57 @@ const FutureRevenueExpensesChart: React.FC<FutureRevenueExpensesChartProps> = ({
     };
   }, []);
 
-  const isLoading =
-    isFutureRevenueByQuarterLoading ||
-    isFutureRevenueByMonthLoading ||
-    isFutureExpensesByQuarterLoading ||
-    isFutureExpensesByMonthLoading;
+  const isLoading = isFutureRevenueByMonthLoading || isFutureExpensesByMonthLoading;
+  const hasError = futureRevenueMonthError || futureExpensesMonthError;
 
-  const hasError =
-    futureRevenueQuarterError ||
-    futureRevenueMonthError ||
-    futureExpensesQuarterError ||
-    futureExpensesMonthError;
+  // Function to calculate quarterly data from monthly data
+  const calculateQuarterlyData = useMemo(() => {
+    if (!futureRevenueByMonth?.chartData || !futureExpensesByMonth?.chartData) {
+      return {
+        labels: [],
+        revenueData: [],
+        expensesData: []
+      };
+    }
+
+    const revenueMonthlyData = futureRevenueByMonth.chartData;
+    const expensesMonthlyData = futureExpensesByMonth.chartData;
+    
+    // Initialize quarterly arrays
+    const quarterlyLabels: string[] = [];
+    const quarterlyRevenue: number[] = [];
+    const quarterlyExpenses: number[] = [];
+    
+    // Process data in groups of 3 months (one quarter)
+    for (let i = 0; i < revenueMonthlyData.length; i += 3) {
+      // Extract year from the first month in the quarter (format: 'MMM YYYY')
+      const dateComponents = revenueMonthlyData[i].label.split(' ');
+      const year = dateComponents.length > 1 ? dateComponents[1] : new Date().getFullYear().toString();
+      
+      // Determine quarter number (1-4) based on the index
+      const quarterNumber = Math.floor(i / 3) + 1;
+      const quarterLabel = `${year}-Q${quarterNumber}`;
+      
+      // Calculate sum for this quarter (up to 3 months, or fewer if at the end of the array)
+      let quarterRevenueSum = 0;
+      let quarterExpensesSum = 0;
+      
+      for (let j = 0; j < 3 && (i + j) < revenueMonthlyData.length; j++) {
+        quarterRevenueSum += revenueMonthlyData[i + j].value;
+        quarterExpensesSum += expensesMonthlyData[i + j]?.value || 0; // Handle potential undefined
+      }
+      
+      quarterlyLabels.push(quarterLabel);
+      quarterlyRevenue.push(quarterRevenueSum);
+      quarterlyExpenses.push(quarterExpensesSum);
+    }
+    
+    return {
+      labels: quarterlyLabels,
+      revenueData: quarterlyRevenue,
+      expensesData: quarterlyExpenses
+    };
+  }, [futureRevenueByMonth, futureExpensesByMonth]);
 
   const createChartData = useMemo(
     () => (labels: string[], revenueData: number[], expensesData: number[]) => ({
@@ -127,13 +143,11 @@ const FutureRevenueExpensesChart: React.FC<FutureRevenueExpensesChartProps> = ({
   );
 
   const quarterlyFutureData = useMemo(
-    () =>
-      createChartData(
-        futureRevenueByQuarter?.chartData?.map((item: ChartItem) => item.label) || [],
-        futureRevenueByQuarter?.chartData?.map((item: ChartItem) => item.value) || [],
-        futureExpensesByQuarter?.chartData?.map((item: ChartItem) => item.value) || []
-      ),
-    [createChartData, futureRevenueByQuarter, futureExpensesByQuarter]
+    () => {
+      const { labels, revenueData, expensesData } = calculateQuarterlyData;
+      return createChartData(labels, revenueData, expensesData);
+    },
+    [createChartData, calculateQuarterlyData]
   );
 
   const yearlyFutureData = useMemo(
