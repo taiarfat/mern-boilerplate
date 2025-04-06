@@ -7,6 +7,7 @@
 import express from "express";
 import controller from "./controller";
 import analyticsController from "./analyticsController";
+import forecastController from "./forecastController";
 import authMiddleware from "../../../middlewares/auth";
 
 // Create a router instance
@@ -101,5 +102,32 @@ route.get("/charts/profit-loss", authMiddleware as any, analyticsController.getP
  * @query {string} [customEndDate] - Custom end date (YYYY-MM-DD) - required if period is 'custom'
  */
 route.get("/department-performance", authMiddleware as any, analyticsController.getDepartmentPerformance as any);
+
+/**
+ * GET /forecast/revenue
+ * Get revenue forecast data
+ *
+ * @query {string} [period] - Predefined period (last-month, last-3-months, last-6-months, last-quarter, current-quarter, year-to-date, last-year, last-2-years, all-time, custom)
+ * @query {string} [department] - Department ID to filter by
+ * @query {string} [category] - Category ID to filter by
+ * @query {string} [projectType] - Filter by project type (fixed, dedicated)
+ * @query {string} [groupBy] - Group data by (month, quarter)
+ * @query {string} [customStartDate] - Custom start date (YYYY-MM-DD) - required if period is 'custom'
+ * @query {string} [customEndDate] - Custom end date (YYYY-MM-DD) - required if period is 'custom'
+ */
+route.get("/forecast/revenue", authMiddleware as any, forecastController.getRevenueForecast as any);
+
+/**
+ * GET /forecast/expenses
+ * Get expenses forecast data
+ *
+ * @query {string} [period] - Predefined period (last-month, last-3-months, last-6-months, last-quarter, current-quarter, year-to-date, last-year, last-2-years, all-time, custom)
+ * @query {string} [department] - Department ID to filter by
+ * @query {string} [category] - Category ID to filter by
+ * @query {string} [groupBy] - Group data by (month, quarter)
+ * @query {string} [customStartDate] - Custom start date (YYYY-MM-DD) - required if period is 'custom'
+ * @query {string} [customEndDate] - Custom end date (YYYY-MM-DD) - required if period is 'custom'
+ */
+route.get("/forecast/expenses", authMiddleware as any, forecastController.getExpenseForecast as any);
 
 export default route;
