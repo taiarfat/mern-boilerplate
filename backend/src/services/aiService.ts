@@ -9,6 +9,8 @@ import axios from "axios";
 import { InsightType } from "../models/AIInsight";
 import AIInsight from "../models/AIInsight";
 import Income from "../models/Income";
+import Expense from "../models/Expense";
+import Department from "../models/Department";
 import Project from "../models/Project";
 import Category from "../models/Category";
 import config from "../constants/config";
@@ -112,6 +114,185 @@ class AIService {
       console.error("Error generating AI insight:", error);
       throw new Error("Failed to generate AI insight");
     }
+  }
+
+  /**
+   * Fetch both income and expense data for comprehensive financial analysis
+   *
+   * @param params - Parameters for the insight request
+   * @returns Object containing income and expense data
+   */
+  private async fetchFinancialData(params?: InsightRequestParams): Promise<any> {
+    try {
+      // Get date range from params or default to last 12 months
+      let startYearMonth: string;
+      let endYearMonth: string;
+
+      if (params?.data?.startYearMonth && params?.data?.endYearMonth) {
+        startYearMonth = params.data.startYearMonth as string;
+        endYearMonth = params.data.endYearMonth as string;
+      } else {
+        // Default to last 12 months
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setFullYear(startDate.getFullYear() - 1);
+
+        // Format dates for yearMonth query
+        startYearMonth = `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}`;
+        endYearMonth = `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      }
+
+      // Fetch income data
+      const incomeData = await this.fetchIncomeData(params);
+
+      // Fetch expense data aggregated by department and category
+      const expensesByDepartment = await Expense.aggregate([
+        {
+          $match: {
+            yearMonth: { $gte: startYearMonth, $lte: endYearMonth }
+          }
+        },
+        {
+          $lookup: {
+            from: "departments",
+            localField: "department",
+            foreignField: "_id",
+            as: "departmentInfo"
+          }
+        },
+        {
+          $lookup: {
+            from: "categories",
+            localField: "category",
+            foreignField: "_id",
+            as: "categoryInfo"
+          }
+        },
+        {
+          $unwind: { path: "$departmentInfo", preserveNullAndEmptyArrays: true }
+        },
+        {
+          $unwind: "$categoryInfo"
+        },
+        {
+          $group: {
+            _id: {
+              yearMonth: "$yearMonth",
+              department: "$departmentInfo.name",
+              category: "$categoryInfo.name",
+              type: "$type"
+            },
+            totalAmount: { $sum: "$amount" }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            yearMonth: "$_id.yearMonth",
+            department: { $ifNull: ["$_id.department", "Uncategorized"] },
+            category: "$_id.category",
+            type: "$_id.type",
+            amount: "$totalAmount"
+          }
+        },
+        {
+          $sort: { yearMonth: 1, department: 1 }
+        }
+      ]);
+
+      // Get monthly expense totals
+      const monthlyExpenses = await Expense.aggregate([
+        {
+          $match: {
+            yearMonth: { $gte: startYearMonth, $lte: endYearMonth }
+          }
+        },
+        {
+          $group: {
+            _id: "$yearMonth",
+            totalAmount: { $sum: "$amount" }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            yearMonth: "$_id",
+            totalAmount: 1
+          }
+        },
+        {
+          $sort: { yearMonth: 1 }
+        }
+      ]);
+
+      // Calculate month-over-month changes for both income and expenses
+      const monthlyComparison = this.calculateMonthlyComparison(incomeData.monthlyTotals, monthlyExpenses);
+
+      return {
+        income: incomeData,
+        expenses: {
+          detailedData: expensesByDepartment,
+          monthlyTotals: monthlyExpenses
+        },
+        monthlyComparison
+      };
+    } catch (error) {
+      console.error("Error fetching financial data:", error);
+      return { error: "Failed to fetch financial data" };
+    }
+  }
+
+  /**
+   * Calculate month-over-month changes for income and expenses
+   *
+   * @param incomeData - Monthly income totals
+   * @param expenseData - Monthly expense totals
+   * @returns Array of monthly comparisons
+   */
+  private calculateMonthlyComparison(incomeData: any[], expenseData: any[]): any[] {
+    // Create a map of income and expense data by month
+    const incomeByMonth: Record<string, number> = {};
+    const expensesByMonth: Record<string, number> = {};
+
+    incomeData?.forEach(item => {
+      incomeByMonth[item.yearMonth] = item.totalAmount;
+    });
+
+    expenseData?.forEach(item => {
+      expensesByMonth[item.yearMonth] = item.totalAmount;
+    });
+
+    // Get all months in chronological order
+    const allMonths = [...new Set([...Object.keys(incomeByMonth), ...Object.keys(expensesByMonth)])].sort();
+
+    // Calculate month-over-month changes
+    const comparison = [];
+    let prevIncome = 0;
+    let prevExpense = 0;
+
+    for (let i = 0; i < allMonths.length; i++) {
+      const month = allMonths[i];
+      const income = incomeByMonth[month] || 0;
+      const expense = expensesByMonth[month] || 0;
+      const profit = income - expense;
+
+      const incomeChange = i > 0 ? ((income - prevIncome) / prevIncome) * 100 : 0;
+      const expenseChange = i > 0 ? ((expense - prevExpense) / prevExpense) * 100 : 0;
+
+      comparison.push({
+        month,
+        income,
+        expense,
+        profit,
+        incomeChangePct: isFinite(incomeChange) ? incomeChange : 0,
+        expenseChangePct: isFinite(expenseChange) ? expenseChange : 0
+      });
+
+      prevIncome = income || prevIncome;
+      prevExpense = expense || prevExpense;
+    }
+
+    return comparison;
   }
 
   /**
@@ -246,6 +427,40 @@ class AIService {
 
       case `${InsightType.RECOMMENDATION}_`:
         return ``;
+
+      case `${InsightType.RECOMMENDATION}_actionable`:
+        // Fetch both income and expense data for analysis
+        const financialData = await this.fetchFinancialData(params);
+
+        return `You are a financial advisor specialized in providing actionable business recommendations.
+
+Analyze the company's financial data (income and expenses) and provide 3-5 specific, actionable recommendations that would have the most significant positive impact on the business.
+
+Here is the company's financial data:
+${JSON.stringify(financialData, null, 2)}
+
+For each recommendation, include:
+1. A clear, concise title
+2. A detailed description explaining the recommendation and its rationale
+3. The potential impact (high, medium, or low)
+4. The implementation effort required (high, medium, or low)
+
+Format your response as a JSON array of recommendation objects with the following structure:
+[
+  {
+    "title": "Marketing Expense Surge",
+    "description": "The Marketing department's expenses grew by 25% MoM without a matching income increase. Consider evaluating campaign ROI and reallocating part of the budget to departments with proven performance.",
+    "impact": "high",
+    "effort": "medium"
+  },
+  {...}
+]
+
+Focus on recommendations that are:
+- Specific and actionable (not generic advice)
+- Based on clear patterns or anomalies in the data
+- Likely to have a meaningful financial impact
+- Realistic to implement`;
 
       case `${InsightType.ALERT}_`:
         return ``;
