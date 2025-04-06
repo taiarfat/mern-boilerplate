@@ -7,7 +7,7 @@
 
 import dotenv from "dotenv";
 import { rateLimit } from "express-rate-limit";
-import { Config } from "../types/common/Config";
+// import { Config } from "../types/common/Config";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -17,7 +17,7 @@ dotenv.config();
  *
  * Contains all configuration settings with defaults for missing environment variables.
  */
-const config: Config = {
+const config = {
   // Server configuration
   PORT: process.env.PORT,
 
@@ -34,15 +34,21 @@ const config: Config = {
   // Access token configuration
   ACCESS_TOKEN_SECRET: process.env.ACCESS_TOKEN_SECRET || "access_secret",
   ACCESS_TOKEN_EXPIRES: process.env.ACCESS_TOKEN_EXPIRES || "15m",
-  ACCESS_TOKEN_COOKIE_EXPIRE_TIME: process.env.ACCESS_TOKEN_COOKIE_EXPIRE_TIME || "15", // In minutes
+  ACCESS_TOKEN_COOKIE_EXPIRE_TIME:
+    process.env.ACCESS_TOKEN_COOKIE_EXPIRE_TIME || "15", // In minutes
 
   // Refresh token configuration
   REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET || "refresh_secret",
   REFRESH_TOKEN_EXPIRES: process.env.REFRESH_TOKEN_EXPIRES || "7d",
-  REFRESH_TOKEN_COOKIE_EXPIRE_TIME: process.env.REFRESH_TOKEN_COOKIE_EXPIRE_TIME || "10080", // In minutes (7 days)
+  REFRESH_TOKEN_COOKIE_EXPIRE_TIME:
+    process.env.REFRESH_TOKEN_COOKIE_EXPIRE_TIME || "10080", // In minutes (7 days)
 
   // Database token expiration (in minutes)
-  DB_TOKEN_EXPIRES: process.env.DB_TOKEN_EXPIRES || "10080" // 7 days
+  DB_TOKEN_EXPIRES: process.env.DB_TOKEN_EXPIRES || "10080", // 7 days
+
+  AI_ENDPOINT: process.env.AI_ENDPOINT || "https://api.AI.com/v1/chat/completions",
+
+  AI_MODEL: process.env.AI_MODEL || "gemma3:4b",
 };
 
 /**
