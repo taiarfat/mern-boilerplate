@@ -20,62 +20,18 @@ const RISK_LEVELS = {
   HIGH: 'high',
 };
 
-const anomalies: Anomaly[] = [
-  {
-    period: '2023-03',
-    riskLevel: 'medium',
-    description:
-      "Potential decline in 'Product' category revenue due to seasonal trends and the high revenue generated in February. Project 18's large revenue may not be repeatable.",
-    earlyWarningIndicators: [
-      'High revenue in February for Project 18.',
-      "Significant increase in 'Product' category revenue compared to previous months.",
-    ],
-    preventativeMeasures: [
-      "Monitor 'Product' category performance closely.",
-      'Implement a marketing campaign to maintain sales momentum after the February peak.',
-    ],
-  },
-  {
-    period: '2023-04',
-    riskLevel: 'low',
-    description:
-      "Slight potential decrease in 'Software PVT' revenue due to potentially lower project activity post-February.",
-    earlyWarningIndicators: [
-      "Decrease in 'Software PVT' revenue compared to February.",
-      'Lack of new major projects launching.',
-    ],
-    preventativeMeasures: [
-      'Maintain pipeline engagement with existing clients.',
-      'Focus on upselling and cross-selling opportunities.',
-    ],
-  },
-  {
-    period: '2023-05',
-    riskLevel: 'low',
-    description:
-      "Continued monitoring of 'System' category, especially Project 10, to ensure consistent performance.",
-    earlyWarningIndicators: [
-      'Project 10 consistently generating high revenue.',
-      'Dependence on a single project driving revenue.',
-    ],
-    preventativeMeasures: [
-      'Diversify project portfolio.',
-      'Explore new opportunities for system sales and upgrades.',
-    ],
-  },
-];
-
 const AnomalyAlertsCardList: React.FC = () => {
   const { data: anomaliesData, isLoading, isError } = useGetAnomalies();
   const [filter, setFilter] = useState<string>(RISK_LEVELS.ALL);
-  const [filteredAnomalies, setFilteredAnomalies] = useState<Anomaly[]>(anomalies);
+  const [filteredAnomalies, setFilteredAnomalies] = useState<Anomaly[]>([]);
 
   useEffect(() => {
     if (filter === RISK_LEVELS.ALL) {
-      setFilteredAnomalies(anomalies);
+      setFilteredAnomalies(anomaliesData?.predictedAnomalies || []);
     } else {
-      const anomalies = anomaliesData?.predictedAnomalies || [];
-      setFilteredAnomalies(anomalies.filter(anomaly => anomaly.riskLevel === filter));
+      setFilteredAnomalies(
+        anomaliesData?.predictedAnomalies?.filter(anomaly => anomaly.riskLevel === filter) || []
+      );
     }
   }, [anomaliesData?.predictedAnomalies, filter]);
 
