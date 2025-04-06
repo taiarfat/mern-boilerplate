@@ -1,7 +1,7 @@
 /**
  * AI Service
  *
- * This service handles interactions with the OpenAI API for generating insights,
+ * This service handles interactions with the AI API for generating insights,
  * forecasts, anomaly detection, and recommendations.
  */
 
@@ -21,6 +21,8 @@ interface InsightRequestParams {
   type: InsightType;
   topic: string;
   data: any;
+  groupBy?: string;
+  fullUrl?: string;
   additionalParams?: Record<string, any>;
 }
 
@@ -33,8 +35,8 @@ class AIService {
   /**
    * Initialize the AI service
    *
-   * @param apiKey - OpenAI API key
-   * @param apiEndpoint - OpenAI API endpoint
+   * @param apiKey - AI API key
+   * @param apiEndpoint - AI API endpoint
    */
   constructor(apiEndpoint: string) {
     this.apiEndpoint = apiEndpoint;
@@ -78,7 +80,7 @@ class AIService {
   }
 
   /**
-   * Generate a new insight using OpenAI API
+   * Generate a new insight using AI API
    *
    * @param params - Parameters for the insight request
    * @returns The AI-generated insight
@@ -88,7 +90,7 @@ class AIService {
       // Construct prompt based on insight type
       const prompt = await this.constructPrompt(params);
 
-      // Call OpenAI API
+      // Call AI API
       console.log("================= AI magic is happing..........");
 
       console.log("================= prompt", prompt);
@@ -96,7 +98,7 @@ class AIService {
       const data = (
         await axios.post(this.apiEndpoint, {
           model: config.AI_MODEL,
-          prompt: JSON.stringify(prompt),
+          prompt: prompt,
           stream: false,
         })
       ).data;
@@ -248,15 +250,20 @@ class AIService {
    * @returns A prompt string for the AI
    */
   private async constructPrompt(params: InsightRequestParams): Promise<string> {
-    const { type, topic } = params;
+    const { type, topic, data, groupBy } = params;
 
     switch (`${type}_${topic}`) {
       case `${InsightType.FORECAST}_revenue`:
-        return ``;
+        return `warning: In response to this prompt I want only JSON output no extra text or acknowledgement. You are a financial analyst specializing in revenue forecasting. Based on the historical revenue data provided, forecast revenue for the next 12 months. Historical revenue data: ${JSON.stringify(
+          data
+        )} Please provide your forecast in JSON format with the following structure: { "chartData": [${
+          groupBy === "quarter"
+            ? '{"label": "2025-Q1", "value": 120000}, {"label": "2025-Q2", "value": 130000}, ...'
+            : '{"label": "2025-01", "value": 40000}, {"label": "2025-02", "value": 42000}, ...'
+        }], "totalRevenue": 1500000, "AI_insights": [ {"title": "Growth Trend", "description": "Revenue is projected to grow by X% over the next year due to...", "priority": "high"}, {"title": "Seasonal Patterns", "description": "Revenue shows strong seasonal patterns with peaks in...", "priority": "medium"} ], "AI_recommendations": [ {"title": "Diversify Revenue Streams", "description": "Consider expanding into new markets to...", "impact": "high", "effort": "medium"}, {"title": "Optimize Pricing Strategy", "description": "Analyze current pricing models and consider...", "impact": "medium", "effort": "low"}]} Ensure your forecast accounts for: 1. Seasonal patterns visible in the historical data 2. Overall growth or decline trends 3. Realistic month-to-month or quarter-to-quarter variations. The forecast should be for exactly 12 months into the future, starting from the month after the last data point in the historical data.`;
 
-      case `${InsightType.FORECAST}_revenue`:
-        return ``;
-
+      case `${InsightType.FORECAST}_expense`:
+        return `warning: In response to this prompt I want only JSON output no extra text or acknowledgement. You are a financial analyst specializing in expense forecasting. Based on the historical expense data provided, forecast expenses for the next 12 months. Historical expense data: ${JSON.stringify(data)} Please provide your forecast in JSON format with the following structure:{ "chartData": [${ groupBy === "quarter" ? '{"label": "2025-Q1", "value": 80000}, {"label": "2025-Q2", "value": 85000}, ...' : '{"label": "2025-01", "value": 25000}, {"label": "2025-02", "value": 27000}, ...' }], "totalExpenses": 1000000, "expenseBreakdown": [ {"type": "salary", "total": 500000, "percentage": 50}, {"type": "operational", "total": 200000, "percentage": 20}, {"type": "marketing", "total": 150000, "percentage": 15}, {"type": "R&D", "total": 100000, "percentage": 10}, {"type": "Misc", "total": 50000, "percentage": 5} ], "AI_insights": [ {"title": "Cost Drivers", "description": "The main drivers of expense growth are...", "priority": "high"}, {"title": "Expense Patterns", "description": "Expenses show cyclical patterns with increases in...", "priority": "medium"} ], "AI_recommendations": [ {"title": "Optimize Operational Costs", "description": "Consider reviewing vendor contracts to...", "impact": "high", "effort": "medium"}, {"title": "Implement Budget Controls", "description": "Establish stricter approval processes for...", "impact": "medium", "effort": "low"} ] } Ensure your forecast accounts for: 1. Seasonal patterns visible in the historical data 2. Overall growth or decline trends 3. Realistic month-to-month or quarter-to-quarter variations 4. Appropriate distribution across expense types based on historical patterns The forecast should be for exactly 12 months into the future, starting from the month after the last data point in the historical data.`; 
       case `${InsightType.ANOMALY}_`:
         return ``;
 

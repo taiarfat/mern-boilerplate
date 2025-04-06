@@ -46,7 +46,7 @@ const config = {
   // Database token expiration (in minutes)
   DB_TOKEN_EXPIRES: process.env.DB_TOKEN_EXPIRES || "10080", // 7 days
 
-  AI_ENDPOINT: process.env.AI_ENDPOINT || "https://api.openai.com/v1/chat/completions",
+  AI_ENDPOINT: process.env.AI_ENDPOINT || "https://api.AI.com/v1/chat/completions",
 
   AI_MODEL: process.env.AI_MODEL || "gemma3:4b",
 };
