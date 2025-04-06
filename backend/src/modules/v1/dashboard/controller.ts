@@ -594,9 +594,95 @@ const getHeadcountMetrics = async (
   }
 };
 
+/**
+ * Get revenue anomaly predictions
+ *
+ * @param req - Express request object
+ * @param res - Express response object
+ * @param next - Express next function
+ * @returns Response with predicted revenue anomalies and risks
+ */
+const getRevenueDropAlert = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> => {
+  try {
+    // Extract query parameters
+    const { period, startDate, endDate } = req.query;
+
+    // Initialize variables for date range
+    let startYearMonth: string | null = null;
+    let endYearMonth: string | null = null;
+    let start: Date | null = null;
+    let end: Date | null = null;
+
+    // Only apply date filters if any date-related parameters are provided
+    if (period || (startDate && endDate)) {
+      if (startDate && endDate) {
+        start = new Date(startDate as string);
+        end = new Date(endDate as string);
+
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+          return sendResponse(
+            res,
+            httpStatusCodes["Bad Request"],
+            responseStatus.ERROR,
+            "Invalid date format"
+          );
+        }
+      } else if (period) {
+        const dateRange = getDateRangeForPeriod(period as string);
+        start = dateRange.start;
+        end = dateRange.end;
+      }
+
+      // Format dates for yearMonth query if dates are available
+      if (start && end) {
+        startYearMonth = `${start.getFullYear()}-${(start.getMonth() + 1).toString().padStart(2, '0')}`;
+        endYearMonth = `${end.getFullYear()}-${(end.getMonth() + 1).toString().padStart(2, '0')}`;
+      }
+    }
+
+    // Get AI insight for revenue anomaly
+    const insight = await aiService.getInsight(
+      {
+        type: InsightType.ANOMALY,
+        topic: "revenue",
+        data: {
+          // Only include date parameters if they are available
+          ...(start && { startDate: start }),
+          ...(end && { endDate: end }),
+          ...(startYearMonth && { startYearMonth }),
+          ...(endYearMonth && { endYearMonth }),
+          // Flag to indicate if date filtering should be applied
+          applyDateFilter: !!(period || (startDate && endDate))
+        },
+        additionalParams: {
+          alertType: "drop",
+          period: period as string || 'all-time'
+        }
+      },
+      req.baseUrl + req.url
+    );
+
+    return sendResponse(
+      res,
+      httpStatusCodes.OK,
+      responseStatus.SUCCESS,
+      "Revenue anomaly predictions retrieved successfully",
+      insight
+    );
+  } catch (err) {
+    console.error("Error in getRevenueDropAlert:", err);
+    return next(err);
+  }
+};
+
 export default {
   getDashboardSummary,
   getAIInsights,
   generateSampleData,
   getHeadcountMetrics,
+  getRevenueDropAlert,
 };
