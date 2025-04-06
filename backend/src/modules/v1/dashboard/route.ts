@@ -114,6 +114,18 @@ route.get("/department-performance", authMiddleware as any, analyticsController.
 route.get("/revenue-drop-alert", authMiddleware as any, controller.getRevenueDropAlert as any);
 
 /**
+ * GET /actionable-recommendations
+ * Get actionable business recommendations based on financial data analysis
+ *
+ * @query {string} [period] - Predefined period for data analysis (last-month, last-year, etc.)
+ * @query {string} [startDate] - Custom start date (YYYY-MM-DD) for data analysis
+ * @query {string} [endDate] - Custom end date (YYYY-MM-DD) for data analysis
+ * @query {string} [department] - Department ID to filter by
+ * @query {string} [category] - Category ID to filter by
+ */
+route.get("/actionable-recommendations", authMiddleware as any, controller.getActionableRecommendations as any);
+
+/**
  * GET /forecast/revenue
  * Get revenue forecast data
  *

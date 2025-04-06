@@ -11,8 +11,26 @@ import { sendResponse } from "../../../helpers/response";
 import Employee from "../../../models/Employee";
 import Department from "../../../models/Department";
 import Project from "../../../models/Project";
-import Income from "../../../models/Income";
 import { encryptPassword } from "../../../helpers/encryptPassword";
+import mongoose from "mongoose";
+
+// Define an interface for the employee response with projectType
+interface EmployeeWithProjectType {
+  _id: mongoose.Types.ObjectId;
+  employeeName: string;
+  employeeEmail: string;
+  employeeGender: string;
+  employeeDob: Date;
+  employeeRole: string[];
+  department: any;
+  category?: any;
+  position: string;
+  salary: number;
+  createdAt: Date;
+  updatedAt: Date;
+  projectType: string; // Added projectType field
+  [key: string]: any; // Allow for additional properties
+}
 
 /**
  * Get all employees
@@ -28,7 +46,7 @@ const getAllEmployees = async (
   next: NextFunction
 ): Promise<Response | void> => {
   try {
-    const { department, position, category, projectType } = req.query;
+    const { department, position, category } = req.query;
 
     // Build query
     const query: any = {};
@@ -46,65 +64,50 @@ const getAllEmployees = async (
       query.category = category;
     }
 
-    // Handle category and projectType filters
-    if (projectType) {
-      // We need to find projects that match the criteria
-      const projectQuery: any = {};
-
-      projectQuery.type = projectType;
-
-      // If we have projectType filter or both filters
-      if (Object.keys(projectQuery).length > 0) {
-        const projects = await Project.find(projectQuery);
-
-        if (projects.length === 0) {
-          // No projects match the criteria, return empty result
-          return sendResponse(
-            res,
-            httpStatusCodes.OK,
-            responseStatus.SUCCESS,
-            "Employees retrieved successfully",
-            []
-          );
-        }
-
-        // Get all employee IDs from these projects
-        const employeeIds = new Set();
-
-        projects.forEach((project) => {
-          project.team.forEach((empId) => {
-            employeeIds.add(empId.toString());
-          });
-        });
-
-        // Add employee filter to query
-        if (employeeIds.size > 0) {
-          query._id = { $in: Array.from(employeeIds) };
-        } else {
-          // No employees found in these projects
-          return sendResponse(
-            res,
-            httpStatusCodes.OK,
-            responseStatus.SUCCESS,
-            "Employees retrieved successfully",
-            []
-          );
-        }
-      }
-    }
-
+    // Get all employees matching the query
     const employees = await Employee.find(query)
       .select("-employeePassword")
       .populate("department", "name")
       .populate("category", "name")
       .sort({ employeeName: 1 });
 
+    // Get all projects to determine employee project types
+    const projects = await Project.find().select('team type');
+
+    // Create a map to track which project type each employee belongs to
+    const employeeProjectMap = new Map();
+
+    // Process all projects to determine each employee's project type
+    projects.forEach(project => {
+      project.team.forEach(empId => {
+        const employeeId = empId.toString();
+        // If employee is already in a project, we don't overwrite
+        // This handles the case where an employee is in multiple projects
+        if (!employeeProjectMap.has(employeeId)) {
+          employeeProjectMap.set(employeeId, project.type);
+        }
+      });
+    });
+
+    // Add projectType to each employee
+    const employeesWithProjectType = employees.map(employee => {
+      const employeeObj = employee.toObject();
+      const employeeId = employee._id.toString();
+
+      // If employee is in a project, use that project type, otherwise set as "freePool"
+      // Use type assertion to tell TypeScript that we're adding a new property
+      return {
+        ...employeeObj,
+        projectType: employeeProjectMap.get(employeeId) || "freePool"
+      } as EmployeeWithProjectType;
+    });
+
     return sendResponse(
       res,
       httpStatusCodes.OK,
       responseStatus.SUCCESS,
       "Employees retrieved successfully",
-      employees
+      employeesWithProjectType
     );
   } catch (err) {
     console.error("Error in getAllEmployees:", err);
