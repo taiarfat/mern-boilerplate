@@ -38,6 +38,7 @@ This project is organized as a monorepo with two main directories:
    ```bash
    cd frontend
    npm install
+   # Edit .env file with your MongoDB connection string and other settings
    npm run dev
    ```
 
