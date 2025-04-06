@@ -9,6 +9,8 @@ import axios from "axios";
 import { InsightType } from "../models/AIInsight";
 import AIInsight from "../models/AIInsight";
 import Income from "../models/Income";
+import Expense from "../models/Expense";
+import Department from "../models/Department";
 import Project from "../models/Project";
 import Category from "../models/Category";
 import config from "../constants/config";
@@ -104,20 +106,193 @@ class AIService {
       ).data;
       console.log("=================", data.response);
 
-      // Extract and parse the response
       const content = data.response;
 
-      // Try to parse as JSON if possible
-      try {
-        return JSON.parse(content);
-      } catch (e) {
-        // Return as text if not valid JSON
-        return { text: content };
-      }
+      // Parse the response to extract JSON
+      return this.parseAIResponse(content);
     } catch (error) {
       console.error("Error generating AI insight:", error);
       throw new Error("Failed to generate AI insight");
     }
+  }
+
+  /**
+   * Fetch both income and expense data for comprehensive financial analysis
+   *
+   * @param params - Parameters for the insight request
+   * @returns Object containing income and expense data
+   */
+  private async fetchFinancialData(params?: InsightRequestParams): Promise<any> {
+    try {
+      // Get date range from params or default to last 12 months
+      let startYearMonth: string;
+      let endYearMonth: string;
+
+      if (params?.data?.startYearMonth && params?.data?.endYearMonth) {
+        startYearMonth = params.data.startYearMonth as string;
+        endYearMonth = params.data.endYearMonth as string;
+      } else {
+        // Default to last 12 months
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setFullYear(startDate.getFullYear() - 1);
+
+        // Format dates for yearMonth query
+        startYearMonth = `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}`;
+        endYearMonth = `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      }
+
+      // Fetch income data
+      const incomeData = await this.fetchIncomeData(params);
+
+      // Fetch expense data aggregated by department and category
+      const expensesByDepartment = await Expense.aggregate([
+        {
+          $match: {
+            yearMonth: { $gte: startYearMonth, $lte: endYearMonth }
+          }
+        },
+        {
+          $lookup: {
+            from: "departments",
+            localField: "department",
+            foreignField: "_id",
+            as: "departmentInfo"
+          }
+        },
+        {
+          $lookup: {
+            from: "categories",
+            localField: "category",
+            foreignField: "_id",
+            as: "categoryInfo"
+          }
+        },
+        {
+          $unwind: { path: "$departmentInfo", preserveNullAndEmptyArrays: true }
+        },
+        {
+          $unwind: "$categoryInfo"
+        },
+        {
+          $group: {
+            _id: {
+              yearMonth: "$yearMonth",
+              department: "$departmentInfo.name",
+              category: "$categoryInfo.name",
+              type: "$type"
+            },
+            totalAmount: { $sum: "$amount" }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            yearMonth: "$_id.yearMonth",
+            department: { $ifNull: ["$_id.department", "Uncategorized"] },
+            category: "$_id.category",
+            type: "$_id.type",
+            amount: "$totalAmount"
+          }
+        },
+        {
+          $sort: { yearMonth: 1, department: 1 }
+        }
+      ]);
+
+      // Get monthly expense totals
+      const monthlyExpenses = await Expense.aggregate([
+        {
+          $match: {
+            yearMonth: { $gte: startYearMonth, $lte: endYearMonth }
+          }
+        },
+        {
+          $group: {
+            _id: "$yearMonth",
+            totalAmount: { $sum: "$amount" }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            yearMonth: "$_id",
+            totalAmount: 1
+          }
+        },
+        {
+          $sort: { yearMonth: 1 }
+        }
+      ]);
+
+      // Calculate month-over-month changes for both income and expenses
+      const monthlyComparison = this.calculateMonthlyComparison(incomeData.monthlyTotals, monthlyExpenses);
+
+      return {
+        income: incomeData,
+        expenses: {
+          detailedData: expensesByDepartment,
+          monthlyTotals: monthlyExpenses
+        },
+        monthlyComparison
+      };
+    } catch (error) {
+      console.error("Error fetching financial data:", error);
+      return { error: "Failed to fetch financial data" };
+    }
+  }
+
+  /**
+   * Calculate month-over-month changes for income and expenses
+   *
+   * @param incomeData - Monthly income totals
+   * @param expenseData - Monthly expense totals
+   * @returns Array of monthly comparisons
+   */
+  private calculateMonthlyComparison(incomeData: any[], expenseData: any[]): any[] {
+    // Create a map of income and expense data by month
+    const incomeByMonth: Record<string, number> = {};
+    const expensesByMonth: Record<string, number> = {};
+
+    incomeData?.forEach(item => {
+      incomeByMonth[item.yearMonth] = item.totalAmount;
+    });
+
+    expenseData?.forEach(item => {
+      expensesByMonth[item.yearMonth] = item.totalAmount;
+    });
+
+    // Get all months in chronological order
+    const allMonths = [...new Set([...Object.keys(incomeByMonth), ...Object.keys(expensesByMonth)])].sort();
+
+    // Calculate month-over-month changes
+    const comparison = [];
+    let prevIncome = 0;
+    let prevExpense = 0;
+
+    for (let i = 0; i < allMonths.length; i++) {
+      const month = allMonths[i];
+      const income = incomeByMonth[month] || 0;
+      const expense = expensesByMonth[month] || 0;
+      const profit = income - expense;
+
+      const incomeChange = i > 0 ? ((income - prevIncome) / prevIncome) * 100 : 0;
+      const expenseChange = i > 0 ? ((expense - prevExpense) / prevExpense) * 100 : 0;
+
+      comparison.push({
+        month,
+        income,
+        expense,
+        profit,
+        incomeChangePct: isFinite(incomeChange) ? incomeChange : 0,
+        expenseChangePct: isFinite(expenseChange) ? expenseChange : 0
+      });
+
+      prevIncome = income || prevIncome;
+      prevExpense = expense || prevExpense;
+    }
+
+    return comparison;
   }
 
   /**
@@ -148,8 +323,14 @@ class AIService {
           startDate.setFullYear(startDate.getFullYear() - 1);
 
           // Format dates for yearMonth query
-          startYearMonth = `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}`;
-          endYearMonth = `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}`;
+          startYearMonth = `${startDate.getFullYear()}-${(
+            startDate.getMonth() + 1
+          )
+            .toString()
+            .padStart(2, "0")}`;
+          endYearMonth = `${endDate.getFullYear()}-${(endDate.getMonth() + 1)
+            .toString()
+            .padStart(2, "0")}`;
         }
 
         // Add date filter to match stage
@@ -159,39 +340,39 @@ class AIService {
       // Aggregate income data by month, project, and category
       const incomeData = await Income.aggregate([
         {
-          $match: matchStage
+          $match: matchStage,
         },
         {
           $lookup: {
             from: "projects",
             localField: "project",
             foreignField: "_id",
-            as: "projectInfo"
-          }
+            as: "projectInfo",
+          },
         },
         {
           $lookup: {
             from: "categories",
             localField: "category",
             foreignField: "_id",
-            as: "categoryInfo"
-          }
+            as: "categoryInfo",
+          },
         },
         {
-          $unwind: { path: "$projectInfo", preserveNullAndEmptyArrays: true }
+          $unwind: { path: "$projectInfo", preserveNullAndEmptyArrays: true },
         },
         {
-          $unwind: "$categoryInfo"
+          $unwind: "$categoryInfo",
         },
         {
           $group: {
             _id: {
               yearMonth: "$yearMonth",
               project: "$projectInfo.name",
-              category: "$categoryInfo.name"
+              category: "$categoryInfo.name",
             },
-            totalAmount: { $sum: "$amount" }
-          }
+            totalAmount: { $sum: "$amount" },
+          },
         },
         {
           $project: {
@@ -199,12 +380,12 @@ class AIService {
             yearMonth: "$_id.yearMonth",
             project: { $ifNull: ["$_id.project", "Uncategorized"] },
             category: "$_id.category",
-            amount: "$totalAmount"
-          }
+            amount: "$totalAmount",
+          },
         },
         {
-          $sort: { yearMonth: 1 }
-        }
+          $sort: { yearMonth: 1 },
+        },
       ]);
 
       return {
@@ -228,26 +409,58 @@ class AIService {
 
     switch (`${type}_${topic}`) {
       case `${InsightType.FORECAST}_revenue`:
-        return `warning: In response to this prompt I want only JSON output no extra text or acknowledgement. You are a financial analyst specializing in revenue forecasting. Based on the historical revenue data provided, forecast revenue for the next 12 months. Historical revenue data: ${JSON.stringify(
-          data
-        )} Please provide your forecast in JSON format with the following structure: { "chartData": ['{"label": "2025-01", "value": 40000}, {"label": "2025-02", "value": 42000}, ...'], "totalRevenue": 1500000, "AI_insights": [ {"title": "Growth Trend", "description": "Revenue is projected to grow by X% over the next year due to...", "priority": "high"}, {"title": "Seasonal Patterns", "description": "Revenue shows strong seasonal patterns with peaks in...", "priority": "medium"} ], "AI_recommendations": [ {"title": "Diversify Revenue Streams", "description": "Consider expanding into new markets to...", "impact": "high", "effort": "medium"}, {"title": "Optimize Pricing Strategy", "description": "Analyze current pricing models and consider...", "impact": "medium", "effort": "low"}]} Ensure your forecast accounts for: 1. Seasonal patterns visible in the historical data 2. Overall growth or decline trends 3. Realistic month-to-month or quarter-to-quarter variations. The forecast should be for exactly 12 months into the future, starting from the month after the last data point in the historical data.`;
+        return `warning: In response to this prompt I want only JSON output no extra text or acknowledgement. You are a financial analyst specializing in revenue forecasting. Based on the historical revenue data provided, forecast revenue for the next 12 months. Historical revenue data: ${JSON.stringify( data )} Please provide your forecast in JSON format with the following structure: { "chartData": ['{"label": "2025-01", "value": 40000}, {"label": "2025-02", "value": 42000}, ...'], "totalRevenue": 1500000, "AI_insights": [ {"title": "Growth Trend", "description": "Revenue is projected to grow by X% over the next year due to...", "priority": "high"}, {"title": "Seasonal Patterns", "description": "Revenue shows strong seasonal patterns with peaks in...", "priority": "medium"} ], "AI_recommendations": [ {"title": "Diversify Revenue Streams", "description": "Consider expanding into new markets to...", "impact": "high", "effort": "medium"}, {"title": "Optimize Pricing Strategy", "description": "Analyze current pricing models and consider...", "impact": "medium", "effort": "low"}]} Ensure your forecast accounts for: 1. Seasonal patterns visible in the historical data 2. Overall growth or decline trends 3. Realistic month-to-month or quarter-to-quarter variations. The forecast should be for exactly 12 months into the future, starting from the month after the last data point in the historical data.`;
 
       case `${InsightType.FORECAST}_expense`:
-        return `warning: In response to this prompt I want only JSON output no extra text or acknowledgement. You are a financial analyst specializing in expense forecasting. Based on the historical expense data provided, forecast expenses for the next 12 months. Historical expense data: ${JSON.stringify(data)} Please provide your forecast in JSON format with the following structure:{ "chartData": ['{"label": "2025-01", "value": 25000}, {"label": "2025-02", "value": 27000}, ...' ], "totalExpenses": 1000000, "expenseBreakdown": [ {"type": "salary", "total": 500000, "percentage": 50}, {"type": "operational", "total": 200000, "percentage": 20}, {"type": "marketing", "total": 150000, "percentage": 15}, {"type": "R&D", "total": 100000, "percentage": 10}, {"type": "Misc", "total": 50000, "percentage": 5} ], "AI_insights": [ {"title": "Cost Drivers", "description": "The main drivers of expense growth are...", "priority": "high"}, {"title": "Expense Patterns", "description": "Expenses show cyclical patterns with increases in...", "priority": "medium"} ], "AI_recommendations": [ {"title": "Optimize Operational Costs", "description": "Consider reviewing vendor contracts to...", "impact": "high", "effort": "medium"}, {"title": "Implement Budget Controls", "description": "Establish stricter approval processes for...", "impact": "medium", "effort": "low"} ] } Ensure your forecast accounts for: 1. Seasonal patterns visible in the historical data 2. Overall growth or decline trends 3. Realistic month-to-month or quarter-to-quarter variations 4. Appropriate distribution across expense types based on historical patterns The forecast should be for exactly 12 months into the future, starting from the month after the last data point in the historical data.`; 
+        return `warning: In response to this prompt I want only JSON output no extra text or acknowledgement. You are a financial analyst specializing in expense forecasting. Based on the historical expense data provided, forecast expenses for the next 12 months. Historical expense data: ${JSON.stringify( data )} Please provide your forecast in JSON format with the following structure:{ "chartData": ['{"label": "2025-01", "value": 25000}, {"label": "2025-02", "value": 27000}, ...' ], "totalExpenses": 1000000, "expenseBreakdown": [ {"type": "salary", "total": 500000, "percentage": 50}, {"type": "operational", "total": 200000, "percentage": 20}, {"type": "marketing", "total": 150000, "percentage": 15}, {"type": "R&D", "total": 100000, "percentage": 10}, {"type": "Misc", "total": 50000, "percentage": 5} ], "AI_insights": [ {"title": "Cost Drivers", "description": "The main drivers of expense growth are...", "priority": "high"}, {"title": "Expense Patterns", "description": "Expenses show cyclical patterns with increases in...", "priority": "medium"} ], "AI_recommendations": [ {"title": "Optimize Operational Costs", "description": "Consider reviewing vendor contracts to...", "impact": "high", "effort": "medium"}, {"title": "Implement Budget Controls", "description": "Establish stricter approval processes for...", "impact": "medium", "effort": "low"} ] } Ensure your forecast accounts for: 1. Seasonal patterns visible in the historical data 2. Overall growth or decline trends 3. Realistic month-to-month or quarter-to-quarter variations 4. Appropriate distribution across expense types based on historical patterns The forecast should be for exactly 12 months into the future, starting from the month after the last data point in the historical data.`;
       case `${InsightType.ANOMALY}_`:
         return ``;
 
       case `${InsightType.ANOMALY}_revenue`:
-          // Fetch income data from the database
-          const incomeData = await this.fetchIncomeData(params);
+        // Fetch income data from the database
+        const incomeData = await this.fetchIncomeData(params);
 
-          return `You are a financial analyst specialized in predicting future revenue anomalies and potential risks.Please analyze the company's historical revenue data and identify any patterns that could indicate FUTURE revenue anomalies or risks.Focus on:1. Identifying trends that suggest future revenue drops2. Predicting potential revenue anomalies in the upcoming months3. Early warning signs in the current data that indicate future problems4. Seasonal patterns that might affect future revenue5. External factors that could impact revenue in the near futureHere is the company's historical revenue data, aggregated by month, project, and category:${JSON.stringify(incomeData)}Based on this historical data, predict potential future revenue anomalies for the next 3-6 months.Format your response as a JSON object with the following structure:{"predictedAnomalies": [{"period": "YYYY-MM","riskLevel": "high/medium/low","description": "Description of the predicted anomaly or risk","earlyWarningIndicators": ["Indicator 1", "Indicator 2"],"preventativeMeasures": ["Measure 1", "Measure 2"]}],"summary": "Overall summary of predictions and recommendations for preventing future revenue issues"}If no future anomalies are predicted, return an empty array for predictedAnomalies and a summary explaining why the revenue outlook appears stable.`;
+        return `You are a financial analyst specialized in predicting future revenue anomalies and potential risks.Please analyze the company's historical revenue data and identify any patterns that could indicate FUTURE revenue anomalies or risks.Focus on:1. Identifying trends that suggest future revenue drops2. Predicting potential revenue anomalies in the upcoming months3. Early warning signs in the current data that indicate future problems4. Seasonal patterns that might affect future revenue5. External factors that could impact revenue in the near futureHere is the company's historical revenue data, aggregated by month, project, and category:${JSON.stringify(incomeData)} Based on this historical data, predict potential future revenue anomalies for the next 3-6 months.Format your response as a JSON object with the following structure:{"predictedAnomalies": [{"period": "YYYY-MM","riskLevel": "high/medium/low","description": "Description of the predicted anomaly or risk","earlyWarningIndicators": ["Indicator 1", "Indicator 2"],"preventativeMeasures": ["Measure 1", "Measure 2"]}],"summary": "Overall summary of predictions and recommendations for preventing future revenue issues"}If no future anomalies are predicted, return an empty array for predictedAnomalies and a summary explaining why the revenue outlook appears stable.`;
 
       case `${InsightType.TREND}_`:
         return ``;
 
       case `${InsightType.RECOMMENDATION}_`:
         return ``;
+
+      case `${InsightType.RECOMMENDATION}_actionable`:
+        // Fetch both income and expense data for analysis
+        const financialData = await this.fetchFinancialData(params);
+
+        return `You are a financial advisor specialized in providing actionable business recommendations.
+
+Analyze the company's financial data (income and expenses) and provide 3-5 specific, actionable recommendations that would have the most significant positive impact on the business.
+
+Here is the company's financial data:
+${JSON.stringify(financialData, null, 2)}
+
+For each recommendation, include:
+1. A clear, concise title
+2. A detailed description explaining the recommendation and its rationale
+3. The potential impact (high, medium, or low)
+4. The implementation effort required (high, medium, or low)
+
+Format your response as a JSON array of recommendation objects with the following structure:
+[
+  {
+    "title": "Marketing Expense Surge",
+    "description": "The Marketing department's expenses grew by 25% MoM without a matching income increase. Consider evaluating campaign ROI and reallocating part of the budget to departments with proven performance.",
+    "impact": "high",
+    "effort": "medium"
+  },
+  {...}
+]
+
+Focus on recommendations that are:
+- Specific and actionable (not generic advice)
+- Based on clear patterns or anomalies in the data
+- Likely to have a meaningful financial impact
+- Realistic to implement`;
 
       case `${InsightType.ALERT}_`:
         return ``;
@@ -258,6 +471,41 @@ class AIService {
           httpStatusCodes["Internal Server Error"],
           "Invalid insight type"
         );
+    }
+  }
+
+  /**
+   * Parse AI response to extract JSON object
+   *
+   * @param response - Raw AI response text
+   * @returns Parsed JavaScript object
+   */
+  private parseAIResponse(response: string): any {
+    try {
+      // Check if response contains a markdown code block
+      const jsonRegex = /```(?:json)?\n([\s\S]*?)\n```/;
+      const match = response.match(jsonRegex);
+
+      if (match && match[1]) {
+        // Extract JSON from code block
+        const jsonString = match[1].trim();
+        return JSON.parse(jsonString);
+      }
+
+      // If no code block, try parsing the entire response as JSON
+      try {
+        return JSON.parse(response);
+      } catch (e) {
+        // If that fails, return the raw text
+        return { data: response };
+      }
+    } catch (error) {
+      console.error("Error parsing AI response:", error);
+      // Return the raw text if parsing fails
+      throw new CustomError(
+        httpStatusCodes["Internal Server Error"],
+        "Invalid AI response"
+      );
     }
   }
 }
