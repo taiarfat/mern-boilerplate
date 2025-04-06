@@ -1,6 +1,19 @@
-import { Grid, Box, CircularProgress, Typography, Paper, Chip } from '@mui/material';
+import { Grid, Box, CircularProgress, Typography, Paper, Chip, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from '@mui/material';
 import DataTable, { Column } from '../components/DataTable';
 import { useGetProjects } from '../hooks';
+import { useState, useMemo } from 'react';
+
+// Interface for project data
+interface Project {
+  name: string;
+  description: string;
+  startDate: string;
+  endDate?: string;
+  type: 'fixed' | 'dedicated';
+  status: 'active' | 'completed' | 'cancelled' | 'on-hold';
+  team: unknown[];
+  [key: string]: any;
+}
 
 // Define columns for Projects page
 const columns: readonly Column[] = [
@@ -31,7 +44,7 @@ const columns: readonly Column[] = [
       return (
         <Chip 
           label={type.charAt(0).toUpperCase() + type.slice(1)} 
-          color={type === 'fixed' ? 'info' : 'success'} 
+          color={type === 'fixed' ? 'primary' : 'secondary'} 
           size="small" 
         />
       );
@@ -84,6 +97,49 @@ const columns: readonly Column[] = [
 
 const ProjectsPage = () => {
   const { data: projects, isLoading, isError } = useGetProjects();
+  const [filters, setFilters] = useState({
+    type: '',
+    status: '',
+  });
+
+  const handleFilterChange = (event: SelectChangeEvent, filterType: string) => {
+    setFilters({
+      ...filters,
+      [filterType]: event.target.value,
+    });
+  };
+
+  // Get unique values for filters
+  const filterOptions = useMemo(() => {
+    if (!projects) return { types: [] as string[], statuses: [] as string[] };
+    
+    const types = [...new Set((projects as Project[]).map(project => project.type))];
+    const statuses = [...new Set((projects as Project[]).map(project => project.status))];
+    
+    return {
+      types,
+      statuses,
+    };
+  }, [projects]);
+
+  // Filter data based on selected filters
+  const filteredData = useMemo(() => {
+    if (!projects) return [];
+    
+    return (projects as Project[]).filter((project) => {
+      // Apply type filter
+      if (filters.type && project.type !== filters.type) {
+        return false;
+      }
+      
+      // Apply status filter
+      if (filters.status && project.status !== filters.status) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [projects, filters]);
 
   return (
     <Grid
@@ -95,6 +151,42 @@ const ProjectsPage = () => {
         flexDirection: 'column',
       }}
     >
+      <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+        <FormControl sx={{ minWidth: 150 }} size="small">
+          <InputLabel id="type-filter-label">Type</InputLabel>
+          <Select
+            labelId="type-filter-label"
+            value={filters.type}
+            label="Type"
+            onChange={(e) => handleFilterChange(e, 'type')}
+          >
+            <MenuItem value="">All</MenuItem>
+            {filterOptions.types.map((type) => (
+              <MenuItem key={type} value={type}>
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        
+        <FormControl sx={{ minWidth: 150 }} size="small">
+          <InputLabel id="status-filter-label">Status</InputLabel>
+          <Select
+            labelId="status-filter-label"
+            value={filters.status}
+            label="Status"
+            onChange={(e) => handleFilterChange(e, 'status')}
+          >
+            <MenuItem value="">All</MenuItem>
+            {filterOptions.statuses.map((status) => (
+              <MenuItem key={status} value={status}>
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
         {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
@@ -105,7 +197,7 @@ const ProjectsPage = () => {
             Error loading project data. Please try again later.
           </Typography>
         ) : (
-          <DataTable columns={columns} rows={projects || []} />
+          <DataTable columns={columns} rows={filteredData || []} />
         )}
       </Paper>
     </Grid>
