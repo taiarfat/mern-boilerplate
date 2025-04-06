@@ -102,4 +102,14 @@ route.get("/charts/profit-loss", authMiddleware as any, analyticsController.getP
  */
 route.get("/department-performance", authMiddleware as any, analyticsController.getDepartmentPerformance as any);
 
+/**
+ * GET /revenue-drop-alert
+ * Get revenue anomaly predictions using AI to forecast potential future revenue issues
+ *
+ * @query {string} [period] - Predefined period for historical data analysis (last-month, last-year, etc.)
+ * @query {string} [startDate] - Custom start date (YYYY-MM-DD) for historical data
+ * @query {string} [endDate] - Custom end date (YYYY-MM-DD) for historical data
+ */
+route.get("/revenue-drop-alert", authMiddleware as any, controller.getRevenueDropAlert as any);
+
 export default route;

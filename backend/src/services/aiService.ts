@@ -8,6 +8,9 @@
 import axios from "axios";
 import { InsightType } from "../models/AIInsight";
 import AIInsight from "../models/AIInsight";
+import Income from "../models/Income";
+import Project from "../models/Project";
+import Category from "../models/Category";
 import config from "../constants/config";
 import { CustomError, httpStatusCodes } from "../constants/constants";
 
@@ -93,14 +96,7 @@ class AIService {
       const data = (
         await axios.post(this.apiEndpoint, {
           model: config.AI_MODEL,
-          prompt: JSON.stringify([
-            {
-              role: "system",
-              content:
-                "You are an AI assistant specialized in business analytics and executive insights.",
-            },
-            { role: "user", content: prompt },
-          ]),
+          prompt: JSON.stringify(prompt),
           stream: false,
         })
       ).data;
@@ -123,6 +119,129 @@ class AIService {
   }
 
   /**
+   * Fetch income data from the database, aggregated by month, project, and category
+   *
+   * @returns Aggregated income data
+   */
+  private async fetchIncomeData(params?: InsightRequestParams): Promise<any> {
+    try {
+      // Check if we should apply date filtering
+      const applyDateFilter = params?.data?.applyDateFilter === true;
+
+      // Initialize match stage for aggregation
+      let matchStage: any = {};
+
+      if (applyDateFilter) {
+        // Get date range from params or default to last 12 months
+        let startYearMonth: string;
+        let endYearMonth: string;
+
+        if (params?.data?.startYearMonth && params?.data?.endYearMonth) {
+          startYearMonth = params.data.startYearMonth as string;
+          endYearMonth = params.data.endYearMonth as string;
+        } else {
+          // Default to last 12 months
+          const endDate = new Date();
+          const startDate = new Date();
+          startDate.setFullYear(startDate.getFullYear() - 1);
+
+          // Format dates for yearMonth query
+          startYearMonth = `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}`;
+          endYearMonth = `${endDate.getFullYear()}-${(endDate.getMonth() + 1).toString().padStart(2, '0')}`;
+        }
+
+        // Add date filter to match stage
+        matchStage.yearMonth = { $gte: startYearMonth, $lte: endYearMonth };
+      }
+
+      // Aggregate income data by month, project, and category
+      const incomeData = await Income.aggregate([
+        {
+          $match: matchStage
+        },
+        {
+          $lookup: {
+            from: "projects",
+            localField: "project",
+            foreignField: "_id",
+            as: "projectInfo"
+          }
+        },
+        {
+          $lookup: {
+            from: "categories",
+            localField: "category",
+            foreignField: "_id",
+            as: "categoryInfo"
+          }
+        },
+        {
+          $unwind: { path: "$projectInfo", preserveNullAndEmptyArrays: true }
+        },
+        {
+          $unwind: "$categoryInfo"
+        },
+        {
+          $group: {
+            _id: {
+              yearMonth: "$yearMonth",
+              project: "$projectInfo.name",
+              category: "$categoryInfo.name"
+            },
+            totalAmount: { $sum: "$amount" }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            yearMonth: "$_id.yearMonth",
+            project: { $ifNull: ["$_id.project", "Uncategorized"] },
+            category: "$_id.category",
+            amount: "$totalAmount"
+          }
+        },
+        {
+          $sort: { yearMonth: 1 }
+        },
+        {
+          $limit: 10
+        }
+      ]);
+
+      // Also get monthly totals for easier analysis
+      // const monthlyTotals = await Income.aggregate([
+      //   {
+      //     $match: matchStage
+      //   },
+      //   {
+      //     $group: {
+      //       _id: "$yearMonth",
+      //       totalAmount: { $sum: "$amount" }
+      //     }
+      //   },
+      //   {
+      //     $project: {
+      //       _id: 0,
+      //       yearMonth: "$_id",
+      //       totalAmount: 1
+      //     }
+      //   },
+      //   {
+      //     $sort: { yearMonth: 1 }
+      //   }
+      // ]);
+
+      return {
+        detailedData: incomeData,
+        // monthlyTotals: monthlyTotals
+      };
+    } catch (error) {
+      console.error("Error fetching income data:", error);
+      return { error: "Failed to fetch income data" };
+    }
+  }
+
+  /**
    * Construct a prompt for the AI based on insight type
    *
    * @param params - Parameters for the insight request
@@ -140,6 +259,12 @@ class AIService {
 
       case `${InsightType.ANOMALY}_`:
         return ``;
+
+      case `${InsightType.ANOMALY}_revenue`:
+          // Fetch income data from the database
+          const incomeData = await this.fetchIncomeData(params);
+
+          return `You are a financial analyst specialized in predicting future revenue anomalies and potential risks.Please analyze the company's historical revenue data and identify any patterns that could indicate FUTURE revenue anomalies or risks.Focus on:1. Identifying trends that suggest future revenue drops2. Predicting potential revenue anomalies in the upcoming months3. Early warning signs in the current data that indicate future problems4. Seasonal patterns that might affect future revenue5. External factors that could impact revenue in the near futureHere is the company's historical revenue data, aggregated by month, project, and category:${JSON.stringify(incomeData, null, 2)}Based on this historical data, predict potential future revenue anomalies for the next 3-6 months.Format your response as a JSON object with the following structure:{"predictedAnomalies": [{"period": "YYYY-MM","riskLevel": "high/medium/low","description": "Description of the predicted anomaly or risk","earlyWarningIndicators": ["Indicator 1", "Indicator 2"],"preventativeMeasures": ["Measure 1", "Measure 2"]}],"summary": "Overall summary of predictions and recommendations for preventing future revenue issues"}If no future anomalies are predicted, return an empty array for predictedAnomalies and a summary explaining why the revenue outlook appears stable.`;
 
       case `${InsightType.TREND}_`:
         return ``;
