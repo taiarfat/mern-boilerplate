@@ -1,3 +1,4 @@
+import { AnomalyResponse } from '../types/Anomaly';
 import { DepartmentResponse } from '../types/Department';
 import { RevenueExpensesRequest, RevenueExpensesResponse } from '../types/Expenses';
 import { HeadCountResponse } from '../types/HeadCount';
@@ -47,5 +48,10 @@ export const getRevenue = async ({
   const response = await api.get('/dashboard/charts/revenue', {
     params: { department, groupBy, period, categoryId, projectType },
   });
+  return response.data;
+};
+
+export const getAnomalies = async (): Promise<AnomalyResponse> => {
+  const response = await api.get('/dashboard/revenue-drop-alert');
   return response.data;
 };

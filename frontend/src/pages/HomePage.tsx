@@ -1,8 +1,8 @@
 import React from 'react';
 import { Container, Box, Grid, CircularProgress } from '@mui/material';
 import RevenueExpensesChart from '../components/Charts/RevenueExpensesChart';
-import AlertsCard from '../components/Charts/AlertsCard';
-import InsightsList from '../components/Charts/InsightsList';
+import AnomalyAlertsCardList from '../components/Charts/AnomalyAlertsCardList';
+// import InsightsList from '../components/Charts/InsightsList';
 import { useGetDepartments, useGetIncomeCategories } from '../hooks';
 import FutureRevenueExpensesChart from '../components/Charts/FutureRevenueExpensesChart';
 
@@ -27,27 +27,25 @@ const HomePage: React.FC = () => {
       }}
     >
       <Container maxWidth={false}>
-        <Grid container spacing={3}>
+        {/* <Grid container spacing={3}>
           <InsightsList />
-        </Grid>
-
+        </Grid> */}
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12, sm: 6 }}>
+          <Grid size={{ xs: 12, sm: 7 }}>
             <RevenueExpensesChart departments={departments} categories={categories} />
           </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
+          <Grid size={{ xs: 12, sm: 5 }}>
             <FutureRevenueExpensesChart departments={departments} />
           </Grid>
           {/* <Grid size={{ xs: 12, sm: 6 }}>
             <HeadcountTrendChart departments={departments} />
           </Grid> */}
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <AlertsCard />
+          <Grid size={{ xs: 12 }}>
+            <AnomalyAlertsCardList />
           </Grid>
           {/* <Grid size={{ xs: 12, sm: 4 }}>
             <DepartmentBreakdownChart />
           </Grid> */}
-          
           {/* <Grid size={{ xs: 12, sm: 4 }}>
             <ForecastUncertaintyChart />
           </Grid> */}

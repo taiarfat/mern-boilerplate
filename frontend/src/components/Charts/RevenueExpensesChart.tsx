@@ -221,7 +221,7 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
           Revenue & Expenses Over Time
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, maxWidth: '60%' }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
             <FormControl size="small" sx={{ minWidth: 150 }}>
               <InputLabel id="revenue-category-label">Category</InputLabel>
               <Select
@@ -238,7 +238,7 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
                 ))}
               </Select>
             </FormControl>
-            <FormControl size="small" sx={{ minWidth: 150, mr: 2 }}>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
               <InputLabel id="revenue-department-label">Department</InputLabel>
               <Select
                 labelId="revenue-department-label"
@@ -254,7 +254,7 @@ const RevenueExpensesChart: React.FC<RevenueExpensesChartProps> = ({ departments
                 ))}
               </Select>
             </FormControl>
-            <FormControl size="small" sx={{ minWidth: 150, mr: 2 }}>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
               <InputLabel id="revenue-project-type-label">Project Type</InputLabel>
               <Select
                 labelId="revenue-project-type-label"

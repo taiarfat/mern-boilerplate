@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import {
+  getAnomalies,
   getDepartments,
   getExpenses,
   getHeadcount,
@@ -47,4 +48,8 @@ export const useGetRevenue = ({
     queryKey: ['revenue', { department, groupBy, period, categoryId, projectType }],
     queryFn: () => getRevenue({ department, groupBy, period, categoryId, projectType }),
   });
+};
+
+export const useGetAnomalies = () => {
+  return useQuery({ queryKey: ['anomalies'], queryFn: getAnomalies });
 };
