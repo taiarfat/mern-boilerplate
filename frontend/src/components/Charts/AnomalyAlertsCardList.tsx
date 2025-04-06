@@ -66,7 +66,7 @@ const anomalies: Anomaly[] = [
 ];
 
 const AnomalyAlertsCardList: React.FC = () => {
-  const { data: anomaliesData, isLoading } = useGetAnomalies();
+  const { data: anomaliesData, isLoading, isError } = useGetAnomalies();
   const [filter, setFilter] = useState<string>(RISK_LEVELS.ALL);
   const [filteredAnomalies, setFilteredAnomalies] = useState<Anomaly[]>(anomalies);
 
@@ -97,6 +97,18 @@ const AnomalyAlertsCardList: React.FC = () => {
       <Card sx={{ height: 300, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <CardContent>
           <CircularProgress />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card sx={{ height: 300, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <CardContent>
+          <Typography variant="body1" align="center">
+            Error loading anomalies
+          </Typography>
         </CardContent>
       </Card>
     );
