@@ -13,7 +13,8 @@ export interface Column {
   label: string;
   minWidth?: number;
   align?: 'right' | 'left' | 'center';
-  format?: (value: unknown) => string;
+  format?: (value: unknown) => string | React.ReactNode;
+  renderCustom?: (value: unknown) => React.ReactNode;
 }
 
 export interface DataTableProps {
@@ -62,7 +63,9 @@ const DataTable: React.FC<DataTableProps> = ({ columns, rows }) => {
                       const value = row[column.id];
                       return (
                         <TableCell key={column.id} align={column.align}>
-                          {column.format && value !== undefined
+                          {column.renderCustom && value !== undefined
+                            ? column.renderCustom(value)
+                            : column.format && value !== undefined
                             ? column.format(value)
                             : (value as React.ReactNode)}
                         </TableCell>

@@ -83,3 +83,22 @@ export const getFutureExpenses = async ({
   });
   return response.data;
 };
+export const getEmployees = async () => {
+  const response = await api.get('/employees');
+  return response.data;
+};
+
+export const getProjects = async () => {
+  const response = await api.get('/projects');
+  return response.data;
+};
+
+export const getIncome = async () => {
+  const response = await api.get('/income');
+  return response.data;
+};
+
+export const getExpensesList = async () => {
+  const response = await api.get('/expenses');
+  return response.data;
+};
