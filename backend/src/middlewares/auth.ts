@@ -22,32 +22,32 @@ import { AuthRequest } from "../types/index";
 const authMiddleware = async (req: AuthRequest, _res: Response, next: NextFunction): Promise<void> => {
   try {
     // Extract tokens from cookies
-    const { access_token: accessToken, refresh_token: refreshToken } = req.cookies;
+    // const { access_token: accessToken, refresh_token: refreshToken } = req.cookies;
 
-    // Verify both tokens exist
-    if (!accessToken || !refreshToken) {
-      throw new CustomError(httpStatusCodes.Unauthorized, "Authentication required");
-    }
+    // // Verify both tokens exist
+    // if (!accessToken || !refreshToken) {
+    //   throw new CustomError(httpStatusCodes.Unauthorized, "Authentication required");
+    // }
 
-    // Verify access token and decode user data
-    const decodedData = verifyAccessToken(accessToken);
+    // // Verify access token and decode user data
+    // const decodedData = verifyAccessToken(accessToken);
 
-    // Fetch user from database using email from token
-    const user = await fetchUser(
-      { userEmail: decodedData.data.userEmail },
-      { userName: 1, userEmail: 1, userRole: 1 }
-    );
+    // // Fetch user from database using email from token
+    // const user = await fetchUser(
+    //   { userEmail: decodedData.data.userEmail },
+    //   { userName: 1, userEmail: 1, userRole: 1 }
+    // );
 
-    // Verify user exists in database
-    if (!user) {
-      throw new CustomError(httpStatusCodes.Unauthorized, "User not found");
-    }
+    // // Verify user exists in database
+    // if (!user) {
+    //   throw new CustomError(httpStatusCodes.Unauthorized, "User not found");
+    // }
 
-    // Verify refresh token is valid for this user
-    await verifyRefreshToken(refreshToken, { user: user as any });
+    // // Verify refresh token is valid for this user
+    // await verifyRefreshToken(refreshToken, { user: user as any });
 
-    // Attach user to request object for use in route handlers
-    req.user = user;
+    // // Attach user to request object for use in route handlers
+    // req.user = user;
 
     // Continue to the next middleware or route handler
     return next();

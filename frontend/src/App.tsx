@@ -7,6 +7,7 @@ import HRPage from './pages/HRPage';
 import ProjectsPage from './pages/ProjectsPage';
 import IncomePage from './pages/IncomePage';
 import ExpensesPage from './pages/ExpensesPage';
+import InsightsPage from './pages/InsightsPage';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ function App() {
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/income" element={<IncomePage />} />
               <Route path="/expenses" element={<ExpensesPage />} />
+              <Route path="/insights" element={<InsightsPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>

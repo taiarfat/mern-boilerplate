@@ -3,6 +3,7 @@ import { DepartmentResponse } from '../types/Department';
 import { RevenueExpensesRequest, RevenueExpensesResponse } from '../types/Expenses';
 import { HeadCountResponse } from '../types/HeadCount';
 import { IncomeCategoryResponse } from '../types/IncomeCategory';
+import { InsightResponse } from '../types/Insight';
 import api from './api';
 
 export const getDepartments = async (): Promise<DepartmentResponse> => {
@@ -56,6 +57,32 @@ export const getAnomalies = async (): Promise<AnomalyResponse> => {
   return response.data;
 };
 
+export const getInsights = async (): Promise<InsightResponse> => {
+  const response = await api.get('/dashboard/actionable-recommendations');
+  return response.data;
+};
+
+export const getFutureRevenue = async ({
+  department,
+  categoryId,
+  projectType,
+}: RevenueExpensesRequest): Promise<RevenueExpensesResponse> => {
+  const response = await api.get('/dashboard/forecast/revenue', {
+    params: { department, categoryId, projectType },
+  });
+  return response.data;
+};
+
+export const getFutureExpenses = async ({
+  department,
+  categoryId,
+  projectType,
+}: RevenueExpensesRequest): Promise<RevenueExpensesResponse> => {
+  const response = await api.get('/dashboard/forecast/expenses', {
+    params: { department, categoryId, projectType },
+  });
+  return response.data;
+};
 export const getEmployees = async () => {
   const response = await api.get('/employees');
   return response.data;

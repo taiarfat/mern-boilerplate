@@ -2,7 +2,7 @@ import React from 'react';
 import { Container, Box, Grid, CircularProgress } from '@mui/material';
 import RevenueExpensesChart from '../components/HomePageComponents/RevenueExpensesChart';
 import AnomalyAlertsCardList from '../components/HomePageComponents/AnomalyAlertsCardList';
-// import InsightsList from '../components/Charts/InsightsList';
+import InsightsList from '../components/HomePageComponents/InsightsList';
 import { useGetDepartments, useGetIncomeCategories } from '../hooks';
 import FutureRevenueExpensesChart from '../components/HomePageComponents/FutureRevenueExpensesChart';
 
@@ -31,6 +31,9 @@ const HomePage: React.FC = () => {
           <InsightsList />
         </Grid> */}
         <Grid container spacing={3}>
+          <Grid size={{ xs: 12 }}>
+            <InsightsList />
+          </Grid>
           <Grid size={{ xs: 12, sm: 7 }}>
             <RevenueExpensesChart departments={departments} categories={categories} />
           </Grid>
